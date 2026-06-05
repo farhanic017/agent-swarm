@@ -8,9 +8,9 @@ A production-grade, multi-agent orchestration framework. Specialized AI agents c
 
 Watch the swarm flow: council meeting, agent graph, live code output, provider routing, and final review.
 
-<video src="examples/agent_swarm_live_demo.mp4" controls poster="examples/agent_swarm_live_demo_poster.png" width="100%"></video>
+![Agent Swarm live demo](./examples/agent_swarm_live_demo.gif)
 
-[Download the live demo video](./examples/agent_swarm_live_demo.mp4)
+[Watch or download the full MP4 demo](./examples/agent_swarm_live_demo.mp4)
 
 ## Architecture
 
