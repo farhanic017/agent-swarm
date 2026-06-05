@@ -1,5 +1,10 @@
 # Agent Swarm
 
+[![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
+![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
+[![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
+![tests: 257 passed](https://img.shields.io/badge/tests-257%20passed-16a34a)
+
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
 A production-grade, multi-agent orchestration framework. Specialized AI agents collaborate through intelligent handoffs to solve complex tasks.
@@ -31,9 +36,28 @@ User Input → [Triage Agent] → [Researcher] → [Writer] → [Reviewer]
 
 ## Quick Start
 
+### Drop-in install
+
+Send this repository link to your AI coding assistant:
+
+```text
+https://github.com/farhanic017/agent-swarm
+```
+
+Ask it to clone the repo, run the tests, and start Agent Swarm. The project is designed for Codex, OpenCode, Claude Code, Cursor, and other coding agents that can run terminal commands.
+
+### Manual install
+
 ```bash
+# Clone
+git clone https://github.com/farhanic017/agent-swarm.git
+cd agent-swarm
+
 # Install dependencies
 pip install -r requirements.txt
+
+# Verify everything
+python -m pytest -q
 
 # Interactive mode
 python main.py
@@ -59,6 +83,19 @@ python -m swarm.core.performance_benchmark --features --models openrouter:anthro
 # Load custom agents
 python main.py --custom-agents examples/agents.json
 ```
+
+### API keys
+
+No API keys are committed to this repo. Add keys through environment variables or your local OpenCode config only:
+
+```bash
+set OPENAI_API_KEY=...
+set AZURE_OPENAI_API_KEY=...
+set AZURE_OPENAI_ENDPOINT=...
+set OPENROUTER_API_KEY=...
+```
+
+Local files such as `.env`, `config.json`, private keys, logs, and swarm state are ignored by git.
 
 ## Expanded Swarm Features
 
