@@ -1,0 +1,375 @@
+import json
+import os
+import socket
+from dataclasses import dataclass, field
+from typing import Optional
+from pathlib import Path
+
+
+PROVIDER_PRIORITY = [
+    "azure",
+    "openai",
+    "anthropic",
+    "openclaw",
+    "google",
+    "openrouter",
+    "groq",
+    "together",
+    "perplexity",
+    "cohere",
+    "mistral",
+    "deepseek",
+    "xai",
+    "ollama",
+    "lmstudio",
+    "vllm",
+    "llamacpp",
+    "local",
+]
+
+PROVIDER_ALIASES = {
+    "azure": "azure", "azure-openai": "azure", "azure-foundry": "azure",
+    "azure-ai-foundry": "azure", "ai-foundry": "azure", "foundry": "azure",
+    "openai": "openai",
+    "anthropic": "anthropic", "anthropic-claude": "anthropic", "claude": "anthropic",
+    "openclaw": "openclaw", "open-claw": "openclaw", "claw": "openclaw",
+    "google": "google", "google-ai": "google", "googleai": "google",
+    "openrouter": "openrouter",
+    "groq": "groq",
+    "together": "together", "together-ai": "together", "togetherai": "together",
+    "perplexity": "perplexity",
+    "cohere": "cohere", "cohere-ai": "cohere",
+    "mistral": "mistral", "mistral-ai": "mistral",
+    "deepseek": "deepseek",
+    "xai": "xai", "x-ai": "xai", "grok": "xai",
+    "ollama": "ollama", "ollama-ai": "ollama", "local-ollama": "ollama",
+    "lmstudio": "lmstudio", "lm-studio": "lmstudio", "localai": "lmstudio", "local-ai": "lmstudio",
+    "vllm": "vllm",
+    "llamacpp": "llamacpp", "llama-cpp": "llamacpp", "llama.cpp": "llamacpp",
+    "local": "local",
+}
+
+FREE_KEYWORDS = ["free", "mini", "nano", "flash", "small", "tiny"]
+
+LOCAL_MODEL_PORTS = [
+    ("ollama", 11434),
+    ("lmstudio", 1234),
+    ("vllm", 8000),
+    ("llamacpp", 8080),
+]
+
+
+@dataclass
+class MCPServerConfig:
+    name: str
+    transport: str = "stdio"
+    command: Optional[str] = None
+    args: list = field(default_factory=list)
+    url: Optional[str] = None
+    env: dict = field(default_factory=dict)
+    auto_discover: bool = True
+
+
+def normalize_provider_name(raw: str) -> str:
+    return PROVIDER_ALIASES.get(raw.lower(), raw.lower())
+
+
+def _is_cheap_model(name: str) -> bool:
+    lower = name.lower()
+    return any(kw in lower for kw in FREE_KEYWORDS)
+
+
+def _check_port(host: str, port: int, timeout: float = 0.5) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except (OSError, socket.gaierror):
+        return False
+
+
+def _detect_local_models() -> dict:
+    providers = {}
+    for name, port in LOCAL_MODEL_PORTS:
+        if _check_port("127.0.0.1", port) or _check_port("localhost", port):
+            endpoint = f"http://localhost:{port}/v1"
+            providers[name] = ProviderConfig(
+                api_key="",
+                endpoint=endpoint,
+            )
+    return providers
+
+
+@dataclass
+class ProviderConfig:
+    api_key: str
+    endpoint: Optional[str] = None
+    models: dict = field(default_factory=dict)
+
+    def has_api_key(self) -> bool:
+        return bool(self.api_key and self.api_key.strip())
+
+
+@dataclass
+class SwarmConfig:
+    max_iterations: int = 25
+    agent_timeout_seconds: int = 60
+    loop_detection_threshold: int = 3
+    default_temperature: float = 0.3
+    default_max_tokens: int = 4096
+    triage_model: Optional[str] = None
+    worker_model: Optional[str] = None
+    providers: dict = field(default_factory=dict)
+    mcp_servers: list = field(default_factory=list)
+    state_dir: str = "swarm_state"
+
+    @classmethod
+    def auto_detect(cls) -> "SwarmConfig":
+        cfg = cls()
+        providers = {}
+
+        azure_key = os.environ.get("AZURE_OPENAI_API_KEY")
+        azure_endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+        if azure_key and azure_endpoint:
+            providers["azure"] = ProviderConfig(
+                api_key=azure_key,
+                endpoint=azure_endpoint,
+            )
+
+        openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+        if openrouter_key:
+            providers["openrouter"] = ProviderConfig(
+                api_key=openrouter_key,
+                endpoint=os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+            )
+
+        google_key = os.environ.get("GOOGLE_API_KEY")
+        if google_key:
+            providers["google"] = ProviderConfig(
+                api_key=google_key,
+                endpoint="https://generativelanguage.googleapis.com/v1beta",
+            )
+
+        openai_key = os.environ.get("OPENAI_API_KEY")
+        if openai_key:
+            providers["openai"] = ProviderConfig(
+                api_key=openai_key,
+            )
+
+        anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+        if anthropic_key:
+            providers["anthropic"] = ProviderConfig(
+                api_key=anthropic_key,
+            )
+
+        openclaw_endpoint = os.environ.get("OPENCLAW_BASE_URL") or os.environ.get("OPENCLAW_ENDPOINT")
+        if openclaw_endpoint:
+            openclaw_model = os.environ.get("OPENCLAW_MODEL", "openclaw/default")
+            providers["openclaw"] = ProviderConfig(
+                api_key=os.environ.get("OPENCLAW_API_KEY", ""),
+                endpoint=openclaw_endpoint,
+                models={openclaw_model: {}},
+            )
+
+        groq_key = os.environ.get("GROQ_API_KEY")
+        if groq_key:
+            providers["groq"] = ProviderConfig(
+                api_key=groq_key,
+                endpoint="https://api.groq.com/openai/v1",
+            )
+
+        local_providers = _detect_local_models()
+        providers.update(local_providers)
+
+        cfg.providers = providers
+        return cfg
+
+    @classmethod
+    def from_opencode_config(cls, path: Optional[str] = None) -> "SwarmConfig":
+        if path is None:
+            home = Path.home()
+            candidates = [
+                home / ".config" / "opencode" / "opencode.jsonc",
+                home / ".config" / "opencode" / "opencode.json",
+                Path.cwd() / "opencode.jsonc",
+                Path.cwd() / "opencode.json",
+            ]
+            for c in candidates:
+                if c.exists():
+                    path = str(c)
+                    break
+
+        if not path or not os.path.exists(path):
+            return cls.auto_detect()
+
+        raw = Path(path).read_text(encoding="utf-8")
+        import re
+
+        def strip_jsonc(text: str) -> str:
+            result = []
+            i = 0
+            in_string = False
+            in_single_line_comment = False
+            in_multi_line_comment = False
+            while i < len(text):
+                ch = text[i]
+                if in_single_line_comment:
+                    if ch == "\n":
+                        in_single_line_comment = False
+                        result.append(ch)
+                    i += 1
+                    continue
+                if in_multi_line_comment:
+                    if ch == "*" and i + 1 < len(text) and text[i + 1] == "/":
+                        in_multi_line_comment = False
+                        i += 2
+                        continue
+                    i += 1
+                    continue
+                if in_string:
+                    if ch == "\\" and i + 1 < len(text):
+                        result.append(ch)
+                        result.append(text[i + 1])
+                        i += 2
+                        continue
+                    if ch == '"':
+                        in_string = False
+                    result.append(ch)
+                    i += 1
+                    continue
+                if ch == '"':
+                    in_string = True
+                    result.append(ch)
+                    i += 1
+                    continue
+                if ch == "/" and i + 1 < len(text):
+                    if text[i + 1] == "/":
+                        in_single_line_comment = True
+                        i += 2
+                        continue
+                    if text[i + 1] == "*":
+                        in_multi_line_comment = True
+                        i += 2
+                        continue
+                result.append(ch)
+                i += 1
+            return "".join(result)
+
+        raw = strip_jsonc(raw)
+        raw = re.sub(r",\s*([}\]])", r"\1", raw)
+        data = json.loads(raw)
+
+        cfg = cls()
+        providers = {}
+        provider_configs = data.get("provider", {})
+
+        for name, pc in provider_configs.items():
+            options = pc.get("options", {})
+            api_key = options.get("apiKey") or os.environ.get(f"{name.upper()}_API_KEY", "")
+            endpoint = (
+                options.get("endpoint")
+                or options.get("baseUrl")
+                or options.get("baseURL")
+                or pc.get("endpoint")
+                or pc.get("baseUrl")
+                or pc.get("baseURL")
+            )
+            models = pc.get("models", {})
+
+            providers[name] = ProviderConfig(
+                api_key=api_key,
+                endpoint=endpoint,
+                models=models,
+            )
+
+        mcp_configs = data.get("mcpServers", {})
+        for mcp_name, mc in mcp_configs.items():
+            transport = mc.get("transport", mc.get("type", "stdio"))
+            command = mc.get("command")
+            args = mc.get("args", [])
+            url = mc.get("url")
+            env = mc.get("env", {})
+            cfg.mcp_servers.append(MCPServerConfig(
+                name=mcp_name,
+                transport=transport,
+                command=command,
+                args=args,
+                url=url,
+                env=env,
+            ))
+
+        local_providers = _detect_local_models()
+        for name, lpc in local_providers.items():
+            if name not in providers:
+                providers[name] = lpc
+
+        cfg.providers = providers
+        return cfg
+
+    def _sorted_providers(self) -> list[tuple[str, ProviderConfig]]:
+        """Return configured providers sorted by priority (best first)."""
+        scored = []
+        for cfg_name, pc in self.providers.items():
+            normalized = normalize_provider_name(cfg_name)
+            try:
+                priority = PROVIDER_PRIORITY.index(normalized)
+            except ValueError:
+                priority = len(PROVIDER_PRIORITY) + 10
+            scored.append((priority, cfg_name, pc))
+        scored.sort(key=lambda x: x[0])
+        return [(cn, pc) for _, cn, pc in scored]
+
+    def _find_provider(self, names: list[str]) -> tuple[Optional[str], Optional[ProviderConfig]]:
+        for target in names:
+            for cfg_name, pc in self.providers.items():
+                if normalize_provider_name(cfg_name) == target:
+                    return cfg_name, pc
+        return None, None
+
+    def get_best_model(self) -> Optional[str]:
+        for cfg_name, pc in self._sorted_providers():
+            if pc.models:
+                first_model = next(iter(pc.models.keys()))
+                return f"{cfg_name}:{first_model}"
+        return None
+
+    def get_cheapest_model(self) -> Optional[str]:
+        cheapest = None
+        cheapest_priority = -1
+        for cfg_name, pc in self._sorted_providers():
+            if not pc.models:
+                continue
+            normalized = normalize_provider_name(cfg_name)
+            try:
+                priority = PROVIDER_PRIORITY.index(normalized)
+            except ValueError:
+                priority = len(PROVIDER_PRIORITY) + 10
+            for model_name in pc.models:
+                if _is_cheap_model(model_name):
+                    if cheapest is None or priority > cheapest_priority:
+                        cheapest = f"{cfg_name}:{model_name}"
+                        cheapest_priority = priority
+        if cheapest:
+            return cheapest
+        for cfg_name, pc in reversed(self._sorted_providers()):
+            if pc.models:
+                first_model = next(iter(pc.models.keys()))
+                return f"{cfg_name}:{first_model}"
+        return None
+
+    def find_model(self, preference: str = "best") -> str:
+        if preference == "best":
+            m = self.get_best_model()
+            if m:
+                return m
+        if preference == "cheap":
+            m = self.get_cheapest_model()
+            if m:
+                return m
+        if preference == "triage" and self.triage_model:
+            return self.triage_model
+        if preference == "worker" and self.worker_model:
+            return self.worker_model
+        m = self.get_best_model()
+        if m:
+            return m
+        return "openrouter:openrouter/free"

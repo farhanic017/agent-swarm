@@ -1,0 +1,30 @@
+{
+  "name": "Animated Coffee Website",
+  "target": "Figma-ready layout and prototype spec",
+  "frames": [
+    {
+      "name": "Home",
+      "size": { "width": 1440, "height": 1024 },
+      "background": "#15110E",
+      "layers": [
+        { "type": "text", "name": "headline", "value": "Brewed Motion", "x": 96, "y": 104, "fontSize": 86, "color": "#FFF6E8" },
+        { "type": "text", "name": "subcopy", "value": "A smooth landing page for small-batch coffee, animated around aroma, pour, and roast.", "x": 102, "y": 218, "fontSize": 22, "color": "#DCC7A5" },
+        { "type": "button", "name": "order_button", "value": "Order Beans", "x": 104, "y": 310, "width": 164, "height": 48, "fill": "#E8A23E" },
+        { "type": "ellipse", "name": "steam_1", "x": 898, "y": 178, "width": 38, "height": 140, "fill": "#FFF0D0", "opacity": 0.22 },
+        { "type": "ellipse", "name": "steam_2", "x": 970, "y": 138, "width": 30, "height": 160, "fill": "#FFF0D0", "opacity": 0.16 },
+        { "type": "image-placeholder", "name": "rotating_coffee_coin_glb", "asset": "coffee_coin.glb", "x": 830, "y": 370, "width": 240, "height": 240 },
+        { "type": "rectangle", "name": "coffee_card", "x": 760, "y": 650, "width": 430, "height": 190, "radius": 22, "fill": "#241912" }
+      ]
+    }
+  ],
+  "prototype": [
+    { "trigger": "after_delay", "target": "steam_1", "animation": "move_up_fade", "durationMs": 1800, "loop": true },
+    { "trigger": "after_delay", "target": "steam_2", "animation": "move_up_fade", "durationMs": 2200, "loop": true },
+    { "trigger": "while_hovering", "target": "order_button", "animation": "scale", "from": 1.0, "to": 1.05, "durationMs": 180 },
+    { "trigger": "continuous", "target": "rotating_coffee_coin_glb", "animation": "spin_y", "durationMs": 3200, "loop": true }
+  ],
+  "notes": [
+    "Direct Figma creation was not executed because no Figma CLI or MCP tool is available in this Codex session.",
+    "This spec is structured so a Figma plugin or MCP bridge can create the frame, layers, and prototype interactions."
+  ]
+}

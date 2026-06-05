@@ -1,0 +1,200 @@
+{
+  "feature_summary": {
+    "features": 9,
+    "successes": 9,
+    "failures": 0,
+    "avg_latency_seconds": 0.0016,
+    "avg_score": 95.6,
+    "errors": {}
+  },
+  "features": [
+    {
+      "feature": "agent_catalog_4_pillars_20_plus_agents",
+      "ok": true,
+      "elapsed_seconds": 0.0002,
+      "score": 100,
+      "details": {
+        "agents": 24,
+        "pillars": [
+          "act",
+          "code",
+          "design",
+          "see"
+        ],
+        "meshed_agents": 24
+      },
+      "error": ""
+    },
+    {
+      "feature": "smart_ai_selection_hybrid_routing",
+      "ok": true,
+      "elapsed_seconds": 0.0122,
+      "score": 100,
+      "details": {
+        "assignments": 72,
+        "routes": {
+          "local": 0,
+          "mcp": 0,
+          "cloud": 72
+        },
+        "providers": [
+          "azure-openai",
+          "cerebras",
+          "cloudflare",
+          "fireworks",
+          "google-ai",
+          "groq",
+          "mistral",
+          "openrouter",
+          "zai"
+        ],
+        "has_rationales": true
+      },
+      "error": ""
+    },
+    {
+      "feature": "always_on_council_voting",
+      "ok": true,
+      "elapsed_seconds": 0.0003,
+      "score": 100,
+      "details": {
+        "verdict": "proceed",
+        "yes_votes": 6,
+        "no_votes": 0,
+        "confidence": 80,
+        "opinions": 6
+      },
+      "error": ""
+    },
+    {
+      "feature": "ab_testing_winner_and_alternative",
+      "ok": true,
+      "elapsed_seconds": 0.0,
+      "score": 100,
+      "details": {
+        "winner": "B",
+        "loser": "A",
+        "candidates": 2,
+        "votes": {
+          "triage": "B",
+          "researcher": "B",
+          "coder": "B",
+          "reviewer": "B",
+          "writer": "B",
+          "text_editor": "B",
+          "prompt_generator": "B",
+          "security": "B"
+        },
+        "summary": "Council selected version B: Hybrid Multi-Agent Plan. Vote A/B: 0/8. Alternative shown: A: Lean Single-Path Plan."
+      },
+      "error": ""
+    },
+    {
+      "feature": "token_budget_guardrails",
+      "ok": true,
+      "elapsed_seconds": 0.0,
+      "score": 90,
+      "details": {
+        "single_agent_estimate": 1200,
+        "max_swarm_tokens": 2640,
+        "max_iterations": 1,
+        "max_parallel_agents": 6,
+        "reason": "Bound swarm overhead so multi-agent work does not spend far more than a single-agent run unless explicitly configured higher."
+      },
+      "error": ""
+    },
+    {
+      "feature": "sub_agent_planning",
+      "ok": true,
+      "elapsed_seconds": 0.0001,
+      "score": 90,
+      "details": {
+        "planned_agents": 81,
+        "parents": 24,
+        "sample": [
+          {
+            "parent_agent": "triage",
+            "sub_agent": "researcher",
+            "task": "Support the parent agent on: benchmark every feature",
+            "model_preference": "reasoning",
+            "pillar": "see"
+          },
+          {
+            "parent_agent": "triage",
+            "sub_agent": "product_manager",
+            "task": "Support the parent agent on: benchmark every feature",
+            "model_preference": "reasoning",
+            "pillar": "act"
+          },
+          {
+            "parent_agent": "triage",
+            "sub_agent": "council_master",
+            "task": "Support the parent agent on: benchmark every feature",
+            "model_preference": "reasoning",
+            "pillar": "act"
+          },
+          {
+            "parent_agent": "researcher",
+            "sub_agent": "analytics",
+            "task": "Find metrics, signals, and evidence for: benchmark every feature",
+            "model_preference": "reasoning",
+            "pillar": "see"
+          },
+          {
+            "parent_agent": "researcher",
+            "sub_agent": "legal",
+            "task": "Check legal, compliance, and policy risks for: benchmark every feature",
+            "model_preference": "reasoning",
+            "pillar": "act"
+          }
+        ]
+      },
+      "error": ""
+    },
+    {
+      "feature": "replacement_model_memory",
+      "ok": true,
+      "elapsed_seconds": 0.0001,
+      "score": 90,
+      "details": {
+        "first_full": true,
+        "second_remembered": true
+      },
+      "error": ""
+    },
+    {
+      "feature": "master_integration_review",
+      "ok": true,
+      "elapsed_seconds": 0.0002,
+      "score": 90,
+      "details": {
+        "status": "pass",
+        "confidence": 100,
+        "checks": {
+          "council_completed": true,
+          "council_proceeded": true,
+          "parts_connected": true,
+          "no_model_failures": true,
+          "loop_free": true
+        },
+        "risks": [],
+        "summary": "Master review pass. 5/5 checks passed. Confidence: 100%."
+      },
+      "error": ""
+    },
+    {
+      "feature": "real_time_dashboard_export",
+      "ok": true,
+      "elapsed_seconds": 0.0015,
+      "score": 100,
+      "details": {
+        "path": "examples\\feature_benchmark_dashboard.html",
+        "bytes": 55489,
+        "exists": true
+      },
+      "error": ""
+    }
+  ],
+  "model_summary": {},
+  "model_runs": []
+}

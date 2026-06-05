@@ -1,0 +1,14 @@
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+
+swarm_state/
+.understand-anything/
+.swarm_lessons.json
+
+.env
+.env.*
+!.env.example
+
+*.log

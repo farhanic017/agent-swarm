@@ -1,0 +1,98 @@
+{
+  "summary": {
+    "openrouter:anthropic/claude-opus-4.8": {
+      "tasks": 3,
+      "successes": 0,
+      "failures": 3,
+      "avg_latency_seconds": null,
+      "avg_score": null,
+      "total_output_chars": 0,
+      "errors": [
+        "Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+        "Skipped after fatal provider error: Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+        "Skipped after fatal provider error: Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402"
+      ]
+    },
+    "openrouter:anthropic/claude-opus-4.7": {
+      "tasks": 3,
+      "successes": 0,
+      "failures": 3,
+      "avg_latency_seconds": null,
+      "avg_score": null,
+      "total_output_chars": 0,
+      "errors": [
+        "Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+        "Skipped after fatal provider error: Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+        "Skipped after fatal provider error: Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402"
+      ]
+    }
+  },
+  "runs": [
+    {
+      "model_ref": "openrouter:anthropic/claude-opus-4.8",
+      "task_name": "coding_patch_plan",
+      "ok": false,
+      "elapsed_seconds": 0.414,
+      "output_chars": 0,
+      "usage": {},
+      "score": 0,
+      "error": "Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+      "finish_reason": ""
+    },
+    {
+      "model_ref": "openrouter:anthropic/claude-opus-4.8",
+      "task_name": "council_decision",
+      "ok": false,
+      "elapsed_seconds": 0.0,
+      "output_chars": 0,
+      "usage": {},
+      "score": 0,
+      "error": "Skipped after fatal provider error: Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+      "finish_reason": ""
+    },
+    {
+      "model_ref": "openrouter:anthropic/claude-opus-4.8",
+      "task_name": "agent_routing",
+      "ok": false,
+      "elapsed_seconds": 0.0,
+      "output_chars": 0,
+      "usage": {},
+      "score": 0,
+      "error": "Skipped after fatal provider error: Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+      "finish_reason": ""
+    },
+    {
+      "model_ref": "openrouter:anthropic/claude-opus-4.7",
+      "task_name": "coding_patch_plan",
+      "ok": false,
+      "elapsed_seconds": 0.286,
+      "output_chars": 0,
+      "usage": {},
+      "score": 0,
+      "error": "Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+      "finish_reason": ""
+    },
+    {
+      "model_ref": "openrouter:anthropic/claude-opus-4.7",
+      "task_name": "council_decision",
+      "ok": false,
+      "elapsed_seconds": 0.0,
+      "output_chars": 0,
+      "usage": {},
+      "score": 0,
+      "error": "Skipped after fatal provider error: Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+      "finish_reason": ""
+    },
+    {
+      "model_ref": "openrouter:anthropic/claude-opus-4.7",
+      "task_name": "agent_routing",
+      "ok": false,
+      "elapsed_seconds": 0.0,
+      "output_chars": 0,
+      "usage": {},
+      "score": 0,
+      "error": "Skipped after fatal provider error: Client error '402 Payment Required' for url 'https://openrouter.ai/api/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402",
+      "finish_reason": ""
+    }
+  ]
+}

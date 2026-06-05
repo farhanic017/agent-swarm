@@ -1,1 +1,192 @@
-# agent-swarm
+# Agent Swarm
+
+A production-grade, multi-agent orchestration framework. Specialized AI agents collaborate through intelligent handoffs to solve complex tasks.
+
+## Architecture
+
+```
+User Input → [Triage Agent] → [Researcher] → [Writer] → [Reviewer]
+                 │                │             │           │
+                 └── routes       └── hands     └── hands   └── returns
+                     tasks            off           off         result
+```
+
+### Layers
+
+| Layer | Components | Purpose |
+|-------|-----------|---------|
+| **Providers** | Azure, OpenRouter, Google, OpenAI, Anthropic, OpenClaw, OpenAI-compatible gateways | Abstracts LLM APIs and agent gateways behind unified interface |
+| **Core** | Agent, Orchestrator, State, Handoff | Agent definitions, execution loop, memory |
+| **Tools** | Web search, file ops, code exec | Functions agents can call |
+| **Safety** | Loop detector, timeout manager | Prevents infinite loops and runaway costs |
+| **Agents** | Triage, Researcher, Coder, Writer, Reviewer | Pre-built specialized roles |
+
+## Quick Start
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Interactive mode
+python main.py
+
+# Headless mode
+python main.py "Research AI agents and write a report"
+
+# List available agents
+python main.py --list-agents
+
+# Run only a council vote with full reasoning
+python main.py --council "should we add dark mode?"
+
+# Export the real-time dashboard demo
+python main.py --dashboard examples/agent_swarm_dashboard.html "build a feature"
+
+# Benchmark every internal swarm feature without paid model calls
+python -m swarm.core.performance_benchmark --features --skip-models --output examples/full_swarm_feature_benchmark.json
+
+# Benchmark features plus live Opus comparisons when provider credits/API access exist
+python -m swarm.core.performance_benchmark --features --models openrouter:anthropic/claude-opus-4.8 openrouter:anthropic/claude-opus-4.7 --max-tokens 260 --output examples/full_swarm_plus_opus_benchmark.json
+
+# Load custom agents
+python main.py --custom-agents examples/agents.json
+```
+
+## Expanded Swarm Features
+
+- **20+ built-in agents** across coding, business, and creative work: coding, security, testing, debugging, marketing, finance, analytics, trading, legal, UX research, localization, product management, sales, design, photo editing, video editing, Figma control, and council coordination.
+- **4 pillars** organize the swarm: `code`, `see`, `design`, and `act`.
+- **Agent Council System** automatically runs on every swarm request before agent work starts. It collects specialist reasoning, surfaces risks and conflicts, tallies proceed/reject votes, and returns a confidence score. `--council` is available when you want only the meeting and vote.
+- **Different model types per agent** are explicit in the catalog: coding, reasoning, chat, vision, best, and cheap model preferences route through the model switcher/fallback chain.
+- **OpenClaw support** detects `OPENCLAW_BASE_URL` or `OPENCLAW_ENDPOINT`, optional `OPENCLAW_API_KEY`, and `OPENCLAW_MODEL`, then routes OpenClaw as an OpenAI-compatible `agent_gateway`.
+- **Hermes support** recognizes Hermes/Nous model names as chat+reasoning capable options for writing, analytics, council, and planning work.
+- **Per-agent sub-agents** are built in. Each specialist has default helper roles and access to the `spawn_agent` tool for delegating focused work when needed.
+- **Text, image, video, and prompt agents** are first-class roles. The swarm includes text editing, prompt generation, image editing, video editing, Figma/design control, and browser prototype checks.
+- **Token budget guardrails** estimate a single-agent run and cap the default swarm run to a small bounded overhead, with max iterations and parallel-agent limits derived from that budget.
+- **Browser control tools** expose `browser_open`, `browser_snapshot`, `browser_click`, `browser_get_title`, and `browser_stop` through the tool registry for agents that need web or prototype testing.
+- **Full agent communication mesh** comes online at the start of every run. Agents can use direct messages, broadcasts, shared artifacts, and live consciousness updates so every specialist can coordinate with every other specialist.
+- **Replacement-model memory** protects model fallback. If a model is out of credits, rate limited, or otherwise fails, the replacement model receives the complete handoff context once, then receives compact reminders on future retries so it continues the same work instead of restarting.
+- **Master integration review** runs after the swarm finishes. It connects the council decision, sub-agent plan, agent outputs, and shared artifacts, then emits a `master_review` release gate with checks, risks, status, and confidence.
+- **Continuous learning** writes an automatic run lesson after each completed swarm run and injects relevant lessons into future agent prompts.
+- **Real-Time Dashboard** exports an HTML dashboard where you can click agents, see their model type, inspect helper sub-agents, watch code type character-by-character, inspect logic flow, view file growth, and review council votes.
+
+## Auto-Detected Providers
+
+The swarm automatically detects available LLM providers from:
+
+1. **OpenCode config** (`~/.config/opencode/opencode.jsonc`) — best for existing users
+2. **Environment variables** — `AZURE_OPENAI_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENCLAW_BASE_URL`, `OPENCLAW_ENDPOINT`, `OPENCLAW_MODEL`
+3. **Fallback** — uses OpenRouter free tier as last resort
+
+The **best model** is used for the triage/routing agent, and **cheaper models** for worker agents.
+
+## Custom Agents
+
+Define agents in a JSON file:
+
+```json
+[
+    {
+        "name": "security_auditor",
+        "description": "Audits code for vulnerabilities",
+        "system_prompt": "You are a security expert...",
+        "tools": ["read_file", "run_python"],
+        "handoff_targets": ["coder", "reviewer"],
+        "temperature": 0.1
+    }
+]
+```
+
+Then build a swarm programmatically:
+
+```python
+from swarm.config import SwarmConfig
+from swarm.core.orchestrator import Orchestrator
+from swarm.core.agent import Agent
+import asyncio
+
+async def main():
+    config = SwarmConfig.from_opencode_config()
+    orchestrator = Orchestrator(config=config)
+
+    planner = Agent(
+        name="planner",
+        system_prompt="You are a strategic planner...",
+        handoff_targets=["analyst", "writer"],
+    )
+    analyst = Agent(
+        name="analyst",
+        system_prompt="You are a data analyst...",
+        tools=["run_python", "read_file"],
+    )
+    orchestrator.register_agents(planner, analyst)
+
+    state = await orchestrator.run("Analyze our project structure")
+    print(state.agent_turns[-1].output)
+
+asyncio.run(main())
+```
+
+## Safety Features
+
+| Feature | Default | Description |
+|---------|---------|-------------|
+| Max iterations | 25 | Hard cap on agent turns per run |
+| Agent timeout | 60s | Max execution time per agent call |
+| Loop detection | 3 repeats | Detects A→B→A→B handoff cycles |
+| Token tracking | Always | Logs cost per agent and per run |
+| State persistence | Always | Saves session to `swarm_state/` |
+
+## Project Structure
+
+```
+agent-swarm/
+├── main.py                 # CLI entry point
+├── swarm/
+│   ├── config.py           # Auto-detect providers & models
+│   ├── providers/          # LLM API abstraction
+│   │   ├── base.py         # LLMResponse, Message, ToolDef
+│   │   ├── azure.py        # Azure OpenAI provider
+│   │   ├── openrouter.py   # OpenRouter provider
+│   │   ├── google.py       # Google AI provider
+│   │   ├── openai.py       # OpenAI provider
+│   │   └── factory.py      # Provider factory
+│   ├── core/               # Orchestration engine
+│   │   ├── agent.py        # Agent definition
+│   │   ├── orchestrator.py # Execution loop & handoffs
+│   │   ├── state.py        # Shared memory & persistence
+│   │   ├── handoff.py      # Handoff protocol
+│   │   └── context.py      # Context compression
+│   ├── tools/              # Agent tools
+│   │   ├── base.py         # Tool wrapper
+│   │   └── registry.py     # Tool registry with defaults
+│   ├── agents/             # Pre-built agents
+│   │   ├── triage.py       # Router/dispatcher
+│   │   ├── researcher.py   # Web research
+│   │   ├── coder.py        # Code writing
+│   │   ├── writer.py       # Content creation
+│   │   └── reviewer.py     # Quality review
+│   └── safety/             # Guardrails
+│       ├── loop_detector.py
+│       └── timeout.py
+├── tests/
+│   ├── test_agent.py
+│   ├── test_handoff.py
+│   ├── test_state.py
+│   └── test_loop_detector.py
+└── examples/
+    ├── custom_swarm.py
+    └── agents.json
+```
+
+## Topologies Supported
+
+| Topology | Description |
+|----------|-------------|
+| **Supervisor** | Central triage routes tasks to workers (default) |
+| **Sequential** | A→B→C assembly line (define handoff chain) |
+| **Mesh** | Any agent can hand off to any other (all-to-all handoffs) |
+
+## License
+
+GPL-3.0 — Copyright Farhan Dhrubo
