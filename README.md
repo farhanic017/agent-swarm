@@ -4,6 +4,14 @@
 
 A production-grade, multi-agent orchestration framework. Specialized AI agents collaborate through intelligent handoffs to solve complex tasks.
 
+## Live Demo
+
+Watch the swarm flow: council meeting, agent graph, live code output, provider routing, and final review.
+
+<video src="examples/agent_swarm_live_demo.mp4" controls poster="examples/agent_swarm_live_demo_poster.png" width="100%"></video>
+
+[Download the live demo video](./examples/agent_swarm_live_demo.mp4)
+
 ## Architecture
 
 ```
