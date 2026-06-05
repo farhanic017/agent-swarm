@@ -1,5 +1,7 @@
 # Agent Swarm
 
+> Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
+
 A production-grade, multi-agent orchestration framework. Specialized AI agents collaborate through intelligent handoffs to solve complex tasks.
 
 ## Architecture
@@ -61,7 +63,8 @@ python main.py --custom-agents examples/agents.json
 - **OpenClaw support** detects `OPENCLAW_BASE_URL` or `OPENCLAW_ENDPOINT`, optional `OPENCLAW_API_KEY`, and `OPENCLAW_MODEL`, then routes OpenClaw as an OpenAI-compatible `agent_gateway`.
 - **Hermes support** recognizes Hermes/Nous model names as chat+reasoning capable options for writing, analytics, council, and planning work.
 - **Per-agent sub-agents** are built in. Each specialist has default helper roles and access to the `spawn_agent` tool for delegating focused work when needed.
-- **Text, image, video, and prompt agents** are first-class roles. The swarm includes text editing, prompt generation, image editing, video editing, Figma/design control, and browser prototype checks.
+- **Text, image, video, and prompt agents** are first-class roles. The swarm includes text editing, prompt generation, image generation/editing, video generation/editing, Figma/design control, and browser prototype checks.
+- **Image and video generation model support** routes configured `image_generation` and `video_generation` models through provider adapters. OpenAI, Azure OpenAI/Foundry-style endpoints, and OpenAI-compatible media gateways can expose `images/generations` and configurable video generation routes.
 - **Token budget guardrails** estimate a single-agent run and cap the default swarm run to a small bounded overhead, with max iterations and parallel-agent limits derived from that budget.
 - **Browser control tools** expose `browser_open`, `browser_snapshot`, `browser_click`, `browser_get_title`, and `browser_stop` through the tool registry for agents that need web or prototype testing.
 - **Full agent communication mesh** comes online at the start of every run. Agents can use direct messages, broadcasts, shared artifacts, and live consciousness updates so every specialist can coordinate with every other specialist.
@@ -79,6 +82,82 @@ The swarm automatically detects available LLM providers from:
 3. **Fallback** — uses OpenRouter free tier as last resort
 
 The **best model** is used for the triage/routing agent, and **cheaper models** for worker agents.
+
+## Image & Video Generation Models
+
+Agent Swarm can route media work to dedicated generation models instead of forcing photo/video agents onto chat models.
+
+### Model discovery
+
+Media models are detected from OpenCode provider metadata or model names:
+
+```jsonc
+{
+  "provider": {
+    "openai": {
+      "options": { "apiKey": "..." },
+      "models": {
+        "gpt-image-1": { "modalities": ["image_generation"] },
+        "sora": { "modalities": ["video_generation"] }
+      }
+    },
+    "azure-foundry": {
+      "options": {
+        "apiKey": "...",
+        "endpoint": "https://example.openai.azure.com"
+      },
+      "models": {
+        "image-prod": {
+          "deployment": "image-prod",
+          "modalities": ["image_generation"]
+        },
+        "video-prod": {
+          "deployment": "video-prod",
+          "apiStyle": "foundry-v1",
+          "modalities": ["video_generation"]
+        }
+      }
+    }
+  }
+}
+```
+
+Name-based detection also recognizes families such as `gpt-image`, `dall-e`, `imagen`, `flux`, `stable-diffusion`, `sdxl`, `sora`, `veo`, `runway`, `kling`, `wan`, and `video`.
+
+### Python API
+
+```python
+from swarm.config import SwarmConfig
+from swarm.providers.base import MediaGenerationRequest
+from swarm.providers.factory import ProviderFactory
+
+config = SwarmConfig.from_opencode_config()
+
+image_model = config.find_model("image_generation")
+image_func = ProviderFactory.get_image_func(config, image_model)
+image = await image_func(MediaGenerationRequest(
+    prompt="A polished coffee brand hero image",
+    size="1024x1024",
+))
+
+video_model = config.find_model("video_generation")
+video_func = ProviderFactory.get_video_func(config, video_model)
+video = await video_func(MediaGenerationRequest(
+    prompt="Steam rising from a coffee cup in a smooth product animation",
+    duration=5,
+))
+```
+
+### Provider behavior
+
+| Provider type | Image route | Video route |
+|---------------|-------------|-------------|
+| OpenAI | `/images/generations` | `/videos/generations` by default, override with `extra.path` |
+| Azure deployment style | `/openai/deployments/{deployment}/images/generations` | `/openai/deployments/{deployment}/videos/generations` |
+| Azure Foundry/OpenAI v1 style | `/openai/v1/images/generations` | `/openai/v1/videos/generations` |
+| OpenAI-compatible gateway | `/images/generations` | `/videos/generations` by default, override with `extra.path` |
+
+The `photo_editor` agent prefers `image_generation` models and the `video_editor` agent prefers `video_generation` models. If no generator is configured, normal vision/chat fallback still applies through the model switcher.
 
 ## Custom Agents
 
@@ -187,6 +266,31 @@ agent-swarm/
 | **Sequential** | A→B→C assembly line (define handoff chain) |
 | **Mesh** | Any agent can hand off to any other (all-to-all handoffs) |
 
+## Version History
+
+### v2 (Current) - Media Generation & Provider Hardening
+- Added image generation and video generation request/response types.
+- Added OpenAI, Azure OpenAI/Foundry, and OpenAI-compatible media generation routes.
+- Added media model discovery for `image_generation` and `video_generation` preferences.
+- Updated photo/video agents to prefer dedicated generation models.
+- Added Azure Foundry aliases and OpenAI v1-style route support.
+- Added Mistral/OpenCode smoke-test wrappers and Qwen/OpenCode compatibility helpers.
+- Added GPL-3.0 `LICENSE`, project `NOTICE`, creator attribution, and Patreon link.
+
+### v1 - Agent Swarm Framework
+- 20+ specialist agents across coding, business, creative, and council roles.
+- Four-pillar architecture: `code`, `see`, `design`, and `act`.
+- Always-on council meeting, debate, vote, confidence scoring, and master review.
+- Real-time dashboard exports with live agent/code visualization.
+- Hybrid local/MCP/cloud model routing, provider diversity, fallback memory, A/B testing, browser tools, and aggressive regression tests.
+
 ## License
 
-GPL-3.0 — Copyright Farhan Dhrubo
+GNU General Public License v3.0 - see [LICENSE](./LICENSE).
+
+This program is free software: you can redistribute and/or modify it under the terms of the GPLv3.
+Modified versions must be licensed under GPLv3 with clear attribution to the original author.
+
+Support development: [Patreon](https://www.patreon.com/farhanic017)
+
+Copyright (c) 2026 Farhan Dhrubo.

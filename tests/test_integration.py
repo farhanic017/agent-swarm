@@ -135,6 +135,34 @@ def test_opencode_provider_level_base_url_is_parsed(tmp_path):
     assert cfg.providers["zai"].endpoint == "https://open.bigmodel.cn/api/paas/v4"
 
 
+def test_media_generation_models_are_discovered_from_opencode_config(tmp_path):
+    cfg_path = tmp_path / "opencode.jsonc"
+    cfg_path.write_text(
+        """
+        {
+          "provider": {
+            "openai": {
+              "options": { "apiKey": "x" },
+              "models": {
+                "gpt-image-1": { "modalities": ["image_generation"] },
+                "sora": { "modalities": ["video_generation"] },
+                "gpt-4o-mini": {}
+              }
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    cfg = SwarmConfig.from_opencode_config(str(cfg_path))
+
+    assert cfg.get_best_image_model() == "openai:gpt-image-1"
+    assert cfg.get_best_video_model() == "openai:sora"
+    assert cfg.find_model("image_generation") == "openai:gpt-image-1"
+    assert cfg.find_model("video_generation") == "openai:sora"
+
+
 def test_tool_registry_defaults():
     reg = ToolRegistry.create_default()
     tools = reg.list_tools()

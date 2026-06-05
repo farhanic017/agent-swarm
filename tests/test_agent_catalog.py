@@ -31,7 +31,7 @@ def test_requested_business_and_creative_agents_exist():
         "sales",
     }
     assert required.issubset(agents)
-    assert agents["photo_editor"].task_type == "vision"
+    assert agents["photo_editor"].task_type == "image_generation"
     assert agents["video_editor"].pillar == "see"
     assert agents["figma_controller"].pillar == "design"
     assert agents["text_editor"].model_preference == "chat"
@@ -43,7 +43,8 @@ def test_requested_business_and_creative_agents_exist():
 def test_agents_have_model_preferences_and_sub_agent_roles():
     agents = {agent.name: agent for agent in create_specialist_agents()}
     assert agents["coder"].model_preference == "coding"
-    assert agents["photo_editor"].model_preference == "vision"
+    assert agents["photo_editor"].model_preference == "image_generation"
+    assert agents["video_editor"].model_preference == "video_generation"
     assert agents["council_master"].model_preference == "reasoning"
     assert "testing" in agents["coder"].sub_agent_roles
     assert "spawn_agent" in agents["coder"].tools

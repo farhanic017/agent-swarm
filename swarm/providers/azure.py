@@ -1,7 +1,8 @@
 import json
 from typing import Optional
 import httpx
-from swarm.providers.base import LLMProvider, LLMResponse, Message
+from swarm.providers.base import LLMProvider, LLMResponse, MediaGenerationRequest, MediaGenerationResponse, Message
+from swarm.providers.media import media_body, media_response
 
 
 REASONING_MODELS = {"gpt-5", "o4", "o3", "o1"}
@@ -72,6 +73,26 @@ class AzureProvider(LLMProvider):
             return f"{base}/openai/v1/chat/completions"
         return f"{self.endpoint}/openai/deployments/{deployment}/chat/completions?api-version={api_version}"
 
+    def _media_url(self, model: str, deployment: str, api_version: str, kind: str) -> str:
+        if model in self.models:
+            m = self.models[model]
+            if isinstance(m, dict):
+                path = m.get(f"{kind}_path") or m.get(f"{kind}Path")
+                if path:
+                    return f"{self.endpoint}{path}"
+
+        if self._uses_openai_v1(model):
+            base = self.endpoint
+            suffix = "images/generations" if kind == "image" else "videos/generations"
+            if base.endswith(f"/{suffix}"):
+                return base
+            if base.endswith("/openai/v1"):
+                return f"{base}/{suffix}"
+            return f"{base}/openai/v1/{suffix}"
+
+        route = "images/generations" if kind == "image" else "videos/generations"
+        return f"{self.endpoint}/openai/deployments/{deployment}/{route}?api-version={api_version}"
+
     async def chat(
         self,
         messages: list,
@@ -122,3 +143,35 @@ class AzureProvider(LLMProvider):
             tool_calls=msg.get("tool_calls", []),
             finish_reason=choice.get("finish_reason", "stop"),
         )
+
+    async def generate_image(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
+        model = request.model or "gpt-image-1"
+        deployment = self._get_deployment(model)
+        api_version = self._get_api_version(model)
+        body = media_body(request, deployment if self._uses_openai_v1(model) else model, kind="image")
+        response = await self._client.post(
+            self._media_url(model, deployment, api_version, "image"),
+            headers={
+                "api-key": self.api_key,
+                "Content-Type": "application/json",
+            },
+            json=body,
+        )
+        response.raise_for_status()
+        return media_response("image", "azure", model, response.json())
+
+    async def generate_video(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
+        model = request.model or "sora"
+        deployment = self._get_deployment(model)
+        api_version = self._get_api_version(model)
+        body = media_body(request, deployment if self._uses_openai_v1(model) else model, kind="video")
+        response = await self._client.post(
+            self._media_url(model, deployment, api_version, "video"),
+            headers={
+                "api-key": self.api_key,
+                "Content-Type": "application/json",
+            },
+            json=body,
+        )
+        response.raise_for_status()
+        return media_response("video", "azure", model, response.json())

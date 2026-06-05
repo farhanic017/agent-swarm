@@ -20,6 +20,28 @@ class ToolCall:
     function: dict = field(default_factory=dict)
 
 
+@dataclass
+class MediaGenerationRequest:
+    prompt: str
+    model: Optional[str] = None
+    size: Optional[str] = None
+    quality: Optional[str] = None
+    duration: Optional[int] = None
+    fps: Optional[int] = None
+    output_format: Optional[str] = None
+    reference_paths: list[str] = field(default_factory=list)
+    extra: dict = field(default_factory=dict)
+
+
+@dataclass
+class MediaGenerationResponse:
+    kind: str
+    model: str
+    provider: str
+    assets: list[dict] = field(default_factory=list)
+    raw: dict = field(default_factory=dict)
+
+
 class ToolDef:
     def __init__(self, name: str, description: str, parameters: dict):
         self.name = name
@@ -67,3 +89,9 @@ class LLMProvider(ABC):
         model: Optional[str] = None,
     ) -> LLMResponse:
         ...
+
+    async def generate_image(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
+        raise NotImplementedError(f"{self.__class__.__name__} does not support image generation")
+
+    async def generate_video(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
+        raise NotImplementedError(f"{self.__class__.__name__} does not support video generation")

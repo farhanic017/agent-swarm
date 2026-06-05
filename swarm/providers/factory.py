@@ -108,6 +108,40 @@ class ProviderFactory:
         return chat_func
 
     @classmethod
+    def get_image_func(cls, config: SwarmConfig, model_ref: str):
+        provider = cls.get_provider(config, model_ref)
+        if provider is None:
+            raise RuntimeError(
+                f"No provider available for image model '{model_ref}'. "
+                "Check your API keys and configuration."
+            )
+
+        async def image_func(request):
+            if ":" in model_ref and not request.model:
+                _, model_name = model_ref.split(":", 1)
+                request.model = model_name
+            return await provider.generate_image(request)
+
+        return image_func
+
+    @classmethod
+    def get_video_func(cls, config: SwarmConfig, model_ref: str):
+        provider = cls.get_provider(config, model_ref)
+        if provider is None:
+            raise RuntimeError(
+                f"No provider available for video model '{model_ref}'. "
+                "Check your API keys and configuration."
+            )
+
+        async def video_func(request):
+            if ":" in model_ref and not request.model:
+                _, model_name = model_ref.split(":", 1)
+                request.model = model_name
+            return await provider.generate_video(request)
+
+        return video_func
+
+    @classmethod
     def _find_any_provider(cls, config: SwarmConfig) -> Optional[LLMProvider]:
         for cfg_name, pc in config._sorted_providers():
             normalized = normalize_provider_name(cfg_name)

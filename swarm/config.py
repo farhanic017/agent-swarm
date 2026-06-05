@@ -50,6 +50,27 @@ PROVIDER_ALIASES = {
 }
 
 FREE_KEYWORDS = ["free", "mini", "nano", "flash", "small", "tiny"]
+IMAGE_GENERATION_KEYWORDS = [
+    "image",
+    "img",
+    "dall-e",
+    "dalle",
+    "gpt-image",
+    "imagen",
+    "flux",
+    "stable-diffusion",
+    "sdxl",
+]
+VIDEO_GENERATION_KEYWORDS = [
+    "video",
+    "sora",
+    "veo",
+    "runway",
+    "kling",
+    "wan",
+    "gen-",
+    "motion",
+]
 
 LOCAL_MODEL_PORTS = [
     ("ollama", 11434),
@@ -77,6 +98,24 @@ def normalize_provider_name(raw: str) -> str:
 def _is_cheap_model(name: str) -> bool:
     lower = name.lower()
     return any(kw in lower for kw in FREE_KEYWORDS)
+
+
+def _model_supports(model_name: str, model_config: dict | None, kind: str) -> bool:
+    cfg = model_config or {}
+    modalities = cfg.get("modalities") or cfg.get("capabilities") or cfg.get("supports") or []
+    if isinstance(modalities, str):
+        modalities = [modalities]
+    modality_text = " ".join(str(item).lower() for item in modalities)
+    if kind in modality_text or f"{kind}_generation" in modality_text or f"{kind}-generation" in modality_text:
+        return True
+
+    model_type = str(cfg.get("type") or cfg.get("kind") or cfg.get("mode") or "").lower()
+    if kind in model_type and "generation" in model_type:
+        return True
+
+    lower = model_name.lower()
+    keywords = IMAGE_GENERATION_KEYWORDS if kind == "image" else VIDEO_GENERATION_KEYWORDS
+    return any(token in lower for token in keywords)
 
 
 def _check_port(host: str, port: int, timeout: float = 0.5) -> bool:
@@ -151,8 +190,14 @@ class SwarmConfig:
 
         openai_key = os.environ.get("OPENAI_API_KEY")
         if openai_key:
+            openai_models = {}
+            if os.environ.get("OPENAI_IMAGE_MODEL"):
+                openai_models[os.environ["OPENAI_IMAGE_MODEL"]] = {"modalities": ["image_generation"]}
+            if os.environ.get("OPENAI_VIDEO_MODEL"):
+                openai_models[os.environ["OPENAI_VIDEO_MODEL"]] = {"modalities": ["video_generation"]}
             providers["openai"] = ProviderConfig(
                 api_key=openai_key,
+                models=openai_models,
             )
 
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -356,7 +401,32 @@ class SwarmConfig:
                 return f"{cfg_name}:{first_model}"
         return None
 
+    def get_media_models(self, kind: str) -> list[str]:
+        matches = []
+        for cfg_name, pc in self._sorted_providers():
+            for model_name, model_config in pc.models.items():
+                cfg = model_config if isinstance(model_config, dict) else {}
+                if _model_supports(model_name, cfg, kind):
+                    matches.append(f"{cfg_name}:{model_name}")
+        return matches
+
+    def get_best_image_model(self) -> Optional[str]:
+        models = self.get_media_models("image")
+        return models[0] if models else None
+
+    def get_best_video_model(self) -> Optional[str]:
+        models = self.get_media_models("video")
+        return models[0] if models else None
+
     def find_model(self, preference: str = "best") -> str:
+        if preference in {"image", "image_generation", "image-generation"}:
+            m = self.get_best_image_model()
+            if m:
+                return m
+        if preference in {"video", "video_generation", "video-generation"}:
+            m = self.get_best_video_model()
+            if m:
+                return m
         if preference == "best":
             m = self.get_best_model()
             if m:

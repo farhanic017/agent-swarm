@@ -1,6 +1,7 @@
 from typing import Optional
 import httpx
-from swarm.providers.base import LLMProvider, LLMResponse, Message
+from swarm.providers.base import LLMProvider, LLMResponse, MediaGenerationRequest, MediaGenerationResponse, Message
+from swarm.providers.media import media_body, media_response
 
 
 class OpenAICompatibleProvider(LLMProvider):
@@ -53,3 +54,35 @@ class OpenAICompatibleProvider(LLMProvider):
             tool_calls=msg.get("tool_calls", []),
             finish_reason=choice.get("finish_reason", "stop"),
         )
+
+    def _headers(self) -> dict:
+        headers = {"Content-Type": "application/json"}
+        if self.api_key and self.api_key.strip():
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
+
+    async def generate_image(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
+        model = request.model or "image-generation"
+        path = request.extra.get("path") or "/images/generations"
+        body = media_body(request, model, kind="image")
+        body.pop("path", None)
+        response = await self._client.post(
+            f"{self.endpoint}{path}",
+            headers=self._headers(),
+            json=body,
+        )
+        response.raise_for_status()
+        return media_response("image", self.provider_name, model, response.json())
+
+    async def generate_video(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
+        model = request.model or "video-generation"
+        path = request.extra.get("path") or "/videos/generations"
+        body = media_body(request, model, kind="video")
+        body.pop("path", None)
+        response = await self._client.post(
+            f"{self.endpoint}{path}",
+            headers=self._headers(),
+            json=body,
+        )
+        response.raise_for_status()
+        return media_response("video", self.provider_name, model, response.json())

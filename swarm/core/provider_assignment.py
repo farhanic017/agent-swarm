@@ -119,6 +119,10 @@ def _candidate(provider: str, model: str) -> dict:
         specialties.update({"chat", "reasoning"})
     if any(token in model_lower for token in ("vision", "multimodal", "image", "flash", "scout")):
         specialties.add("vision")
+    if any(token in model_lower for token in ("image", "img", "dall-e", "dalle", "gpt-image", "imagen", "flux", "stable-diffusion", "sdxl")):
+        specialties.update({"image_generation", "vision"})
+    if any(token in model_lower for token in ("video", "sora", "veo", "runway", "kling", "wan", "motion")):
+        specialties.update({"video_generation", "vision"})
     if any(token in model_lower for token in ("mini", "small", "flash", "instant", "haiku", "nano")):
         specialties.add("chat")
     if not specialties:
@@ -165,6 +169,9 @@ def _score_candidate(agent: Agent, role: str, candidate: dict, used_providers: l
     if desired_preference in candidate["specialties"]:
         score += 50
         reasons.append(f"matches {desired_preference}")
+    elif desired_preference in {"image_generation", "video_generation"} and "vision" in candidate["specialties"]:
+        score += 30
+        reasons.append("vision fallback for media generation")
     elif "general" in candidate["specialties"]:
         score += 12
         reasons.append("general fallback")

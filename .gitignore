@@ -2,13 +2,36 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.egg-info/
+dist/
+build/
 
 swarm_state/
 .understand-anything/
 .swarm_lessons.json
+config.json
 
 .env
 .env.*
 !.env.example
+*.key
+*.pem
 
 *.log
+*.tmp
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+node_modules/
+temp/
+assets/
+*.exe

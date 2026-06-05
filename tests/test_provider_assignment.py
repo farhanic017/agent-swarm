@@ -84,3 +84,25 @@ def test_hermes_models_are_ranked_for_chat_and_reasoning():
     assert {assignment.agent_name for assignment in assignments} == {"writer", "analytics"}
     assert all(assignment.provider == "openrouter" for assignment in assignments)
     assert all("matches" in assignment.rationale for assignment in assignments)
+
+
+def test_media_generation_agents_prefer_generation_models():
+    agents = [agent for agent in create_specialist_agents() if agent.name in {"photo_editor", "video_editor"}]
+    cfg = SwarmConfig(
+        providers={
+            "openai": ProviderConfig(
+                api_key="x",
+                models={
+                    "gpt-image-1": {"modalities": ["image_generation"]},
+                    "sora": {"modalities": ["video_generation"]},
+                    "gpt-4o": {},
+                },
+            )
+        }
+    )
+
+    assignments = assign_hybrid_provider_models(agents, cfg, include_sub_agents=False)
+    by_agent = {assignment.agent_name: assignment for assignment in assignments}
+
+    assert by_agent["photo_editor"].model == "gpt-image-1"
+    assert by_agent["video_editor"].model == "sora"
