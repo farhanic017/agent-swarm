@@ -196,6 +196,21 @@ def test_public_benchmark_prices_use_refreshed_blended_rates():
     assert prices["Llama 4 Maverick"] == 0.44
 
 
+def test_public_benchmark_intelligence_and_speed_use_refreshed_sources():
+    points = {point["name"]: point for point in PUBLIC_BENCHMARK_POINTS}
+
+    assert points["Claude Opus 4.8"]["intelligence"] == 61.4
+    assert points["Claude Opus 4.8"]["speed"] == 63.7
+    assert points["GPT-5.5"]["intelligence"] == 60.2
+    assert points["GPT-5.5"]["speed"] == 72.3
+    assert points["MiniMax M2"]["intelligence"] == 36.0
+    assert points["MiniMax M2"]["speed"] == 99.2
+    assert points["Kimi K2.6"]["speed"] == 36.2
+    assert points["MiMo V2.5 Pro"]["intelligence"] == 54.0
+    assert points["Grok 4.3"]["speed"] == 92.3
+    assert points["Qwen3 Coder 480B"]["speed"] == 60.9
+
+
 def test_agent_swarm_price_is_low_but_not_unrealistically_flat():
     points = build_comparison_card_points({"comparison": {}, "swarm_complex_work": {"agent_count": 12, "sub_agent_count": 20}})
     swarm = next(point for point in points if point["name"] == "Agent Swarm")
