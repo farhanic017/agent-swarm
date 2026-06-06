@@ -32,9 +32,16 @@ def test_requested_business_and_creative_agents_exist():
         "trading",
         "sales",
         "ai_reviewer",
+        "backend_api",
+        "frontend_ui",
+        "documentation",
     }
     assert required.issubset(agents)
     assert agents["photo_editor"].task_type == "image_generation"
+    assert agents["backend_api"].pillar == "code"
+    assert agents["frontend_ui"].pillar == "design"
+    assert "plan_docs_integration" in agents["documentation"].tools
+    assert "compact_context" in agents["coder"].tools
     assert agents["video_editor"].pillar == "see"
     assert agents["voice_transcriber"].task_type == "speech_to_text"
     assert agents["voice_generator"].model_preference == "text_to_speech"

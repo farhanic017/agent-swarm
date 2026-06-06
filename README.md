@@ -3,7 +3,7 @@
 [![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
-![tests: 269 passed](https://img.shields.io/badge/tests-269%20passed-16a34a)
+![tests: 274 passed](https://img.shields.io/badge/tests-274%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -104,7 +104,7 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 
 ## Expanded Swarm Features
 
-- **20+ built-in agents** across coding, business, and creative work: coding, security, testing, debugging, marketing, finance, analytics, trading, legal, UX research, localization, product management, sales, design, photo editing, video editing, Figma control, and council coordination.
+- **20+ built-in agents** across coding, business, and creative work: backend API, frontend UI, coding, security, testing, debugging, documentation, marketing, finance, analytics, trading, legal, UX research, localization, product management, sales, design, photo editing, video editing, Figma control, and council coordination.
 - **4 pillars** organize the swarm: `code`, `see`, `design`, and `act`.
 - **Agent Council System** automatically runs on every swarm request before agent work starts. It collects specialist reasoning, surfaces risks and conflicts, tallies proceed/reject votes, and returns a confidence score. `--council` is available when you want only the meeting and vote.
 - **Different model types per agent** are explicit in the catalog: coding, reasoning, chat, vision, best, and cheap model preferences route through the model switcher/fallback chain.
@@ -114,12 +114,17 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 - **Hermes support** recognizes Hermes/Nous model names as chat+reasoning capable options for writing, analytics, council, and planning work.
 - **Per-agent sub-agents** are built in. Each specialist has default helper roles and access to the `spawn_agent` tool for delegating focused work when needed.
 - **AI Reviewer Agent** reviews every individual agent output before integration for security vulnerabilities, performance issues, and logic errors. It produces GitHub PR inline comment payloads and routes fixes back to the responsible agent before the master connects the project parts.
+- **XSS validation** flags risky raw HTML rendering such as `dangerouslySetInnerHTML`, `innerHTML = userInput`, unescaped template HTML, and injected `<script>` blocks before frontend work is integrated.
+- **/compact context management** creates project-memory summaries that preserve architecture, completed work, pending work, decisions, risks, artifacts, recent turns, and next-agent instructions while dropping old conversational noise.
+- **Architecture-first onboarding** tells the first agent to inspect project structure once, then future agents continue from compact summaries and inspect only relevant files to reduce token waste.
+- **Docs integration planning** selects framework/API docs such as Next.js, React, Tailwind, Supabase, Stripe, Figma, Vercel, Cloudflare, Three.js, ElevenLabs, and Manus before version-sensitive code is generated.
 - **Text, voice, image, video, and prompt agents** are first-class roles. The swarm includes text editing, prompt generation, speech-to-text, text-to-speech, image generation/editing, video generation/editing, Figma/design control, and browser prototype checks.
 - **Image and video generation model support** routes configured `image_generation` and `video_generation` models through provider adapters. OpenAI, Azure OpenAI/Foundry-style endpoints, and OpenAI-compatible media gateways can expose `images/generations` and configurable video generation routes.
 - **Voice-to-text and text-to-speech support** routes configured `speech_to_text` and `text_to_speech` models through OpenAI-compatible audio routes or native ElevenLabs endpoints. Voice agents can create transcript/subtitle workflows and narration/voiceover workflows without forcing audio work onto chat agents.
 - **Mockup video support** plans storyboard, generated/imported assets, motion, render preview, and export with draft-resolution guardrails.
 - **Photo/video/audio app adapter registry** covers Adobe Photoshop, Lightroom, Illustrator, Premiere Pro, After Effects, Media Encoder, Audition, DaVinci Resolve, CapCut, Final Cut Pro, Blender, Figma, Canva, GIMP, Krita, Affinity tools, Runway, Pika, Kling, ElevenLabs, Manus, Whisper, Audacity, Stable Diffusion, and ComfyUI.
 - **Temporary skill acquisition** plans missing work skills, installs run-scoped skill manifests, injects them into the swarm, and deletes temporary downloads after all agents complete.
+- **MCP marketplace planner** includes connectors for dev infrastructure, productivity, messaging, design, CRM, finance, e-commerce, marketing, storage, HR, legal, research, healthcare, travel, music, and specialized tools. It plans only task-relevant MCPs so broad access is not enabled by default.
 - **Local model, CLI, MCP, and IDE support discovery** detects Ollama, LM Studio, vLLM, llama.cpp, Jan, KoboldCPP, text-generation-webui, LocalAI, Codex, OpenCode, Mistral Vibe, Claude Code, Gemini/Qwen CLIs, Aider, Cursor, Windsurf, VS Code, Zed, JetBrains surfaces, and common MCP servers.
 - **Token budget guardrails** estimate a single-agent run and cap the default swarm run to a small bounded overhead, with max iterations and parallel-agent limits derived from that budget.
 - **Browser control tools** expose `browser_open`, `browser_snapshot`, `browser_click`, `browser_get_title`, and `browser_stop` through the tool registry for agents that need web or prototype testing.
@@ -294,9 +299,12 @@ The master review fails if unresolved preflight inline comments remain, so probl
 ## Skills, Apps, Local Models & IDEs
 
 - **Temporary skills:** `plan_temporary_skills` determines missing skills for browser, Figma, media, audio, voice, Blender, security, performance, and MCP work. Temporary skills are removed after the swarm finishes.
-- **Media apps:** `list_media_app_adapters` exposes adapter metadata for Adobe apps, DaVinci Resolve, CapCut, Blender, Figma, Canva, GIMP, Krita, Affinity, Runway, Pika, Kling, ElevenLabs, Manus, Whisper, Audacity, Stable Diffusion, and ComfyUI.
+- **Media apps:** `list_media_app_adapters` exposes adapter metadata for Adobe apps, DaVinci Resolve, CapCut, Blender, Figma, Canva, GIMP, Krita, Affinity, Runway, Pika, Kling AI, Imagine, Seedance/Sedance, Highfield, Nano Banana, ElevenLabs, Manus, Whisper, Audacity, Stable Diffusion, and ComfyUI.
 - **Mockups:** `plan_mockup_video` creates a low-lag mockup video workflow with 720p draft previews, 24 fps draft renders, and final render approval.
 - **Voice workflows:** `plan_voice_workflow` creates speech-to-text and text-to-speech plans with chunking, preview-before-render, and voice-clone approval guardrails.
+- **Context compaction:** `compact_context` implements `/compact` style summaries so long coding sessions can continue without rereading the entire repository.
+- **Docs integration:** `plan_docs_integration` picks relevant docs before agents write code.
+- **MCP marketplace:** `list_mcp_marketplace` and `plan_mcp_connectors` expose task-scoped connector planning for Gmail, Google Calendar, Google Drive, Figma, Canva, Vercel, Wix, Hugging Face, Supabase, Stripe, Shopify, Slack, Notion, Microsoft 365, Adobe, Cloudinary, HubSpot, Salesforce/Outreach, QuickBooks, IBKR, Semrush, Ahrefs, Box, Workable, legal/research/health/travel/music connectors, and more.
 - **Environment discovery:** `discover_environment_support` checks local model runtimes, CLI agents, IDE agents, and MCP server categories without blocking on missing tools.
 - **Lag/token controls:** model fallback cooldowns, replacement-model memory, bounded model chains, max iterations, max parallel agents, and token budget caps keep agents from getting stuck or exploding token usage.
 
@@ -412,8 +420,13 @@ agent-swarm/
 ### v3 (Current) - Preflight AI Review, Skills, Apps & Local Runtime Support
 - Added dedicated `ai_reviewer` agent for per-agent security, performance, and logic review before integration.
 - Added GitHub PR inline comment payload generation and master-review blocking for unresolved preflight issues.
+- Added explicit XSS validation for raw HTML rendering and script injection patterns.
+- Added `/compact` context summaries for long sessions, architecture-first onboarding, pending-work handoff, and token-efficient continuation.
+- Added docs integration planning for framework/API references before code generation.
+- Added MCP marketplace directory and task-scoped connector planning across dev, productivity, design, CRM, finance, commerce, marketing, legal, research, healthcare, travel, music, and specialized tools.
 - Added mockup video planning and broad photo/video/design app adapter registry including Adobe, DaVinci Resolve, CapCut, Blender, Figma, Stable Diffusion, ComfyUI, Runway, Pika, and Kling.
 - Added voice-to-text and text-to-speech agents, OpenAI-compatible audio routes, native ElevenLabs STT/TTS, and Manus provider discovery.
+- Added backend API, frontend UI, and documentation agents for common multi-agent work splits.
 - Added temporary skill planning, run-scoped skill install manifests, and automatic cleanup after agents finish.
 - Added local model runtime, CLI agent, IDE agent, and MCP support discovery.
 - Added smoother token/lag guardrails through deterministic preflight checks, bounded discovery, cooldown-aware model fallback, and cleanup.

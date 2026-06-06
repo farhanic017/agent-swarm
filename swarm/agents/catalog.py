@@ -42,6 +42,8 @@ CODE_TOOLS = (
     "list_directory",
     "run_python",
     "run_react_doctor",
+    "compact_context",
+    "plan_docs_integration",
 )
 
 REVIEW_TOOLS = (
@@ -53,6 +55,7 @@ REVIEW_TOOLS = (
 )
 
 RESEARCH_TOOLS = ("search_web", "read_file", "list_directory")
+DOC_TOOLS = ("read_file", "write_file", "list_directory", "plan_docs_integration", "compact_context")
 BROWSER_TOOLS = (
     "browser_open",
     "browser_snapshot",
@@ -71,6 +74,8 @@ DEFAULT_MODEL_PREFERENCES = {
 AGENT_MODEL_PREFERENCES = {
     "triage": "best",
     "coder": "coding",
+    "backend_api": "coding",
+    "frontend_ui": "coding",
     "reviewer": "coding",
     "ai_reviewer": "coding",
     "security": "reasoning",
@@ -83,12 +88,15 @@ AGENT_MODEL_PREFERENCES = {
     "figma_controller": "vision",
     "text_editor": "chat",
     "prompt_generator": "chat",
+    "documentation": "chat",
     "council_master": "reasoning",
 }
 
 AGENT_SUB_AGENT_ROLES = {
     "triage": ("researcher", "product_manager", "council_master"),
-    "coder": ("testing", "security", "reviewer", "debugging"),
+    "coder": ("backend_api", "frontend_ui", "testing", "security"),
+    "backend_api": ("security", "testing", "documentation"),
+    "frontend_ui": ("ux_research", "testing", "documentation"),
     "reviewer": ("ai_reviewer", "testing", "security", "coder"),
     "ai_reviewer": ("security", "testing", "debugging", "coder"),
     "security": ("testing", "debugging", "legal"),
@@ -110,6 +118,7 @@ AGENT_SUB_AGENT_ROLES = {
     "voice_generator": ("writer", "localization", "video_editor"),
     "figma_controller": ("design", "ux_research", "coder"),
     "writer": ("text_editor", "marketing", "localization", "reviewer"),
+    "documentation": ("writer", "reviewer", "localization"),
     "text_editor": ("writer", "localization", "reviewer"),
     "prompt_generator": ("writer", "photo_editor", "video_editor", "design"),
     "researcher": ("analytics", "legal", "ux_research"),
@@ -121,9 +130,12 @@ AGENT_SPECS: tuple[AgentSpec, ...] = (
     AgentSpec("triage", "Triage Agent", "act", "core", "Routes work to the best specialist.", ("classify requests", "split tasks", "handoff"), COMMON_COLLAB_TOOLS, 0.2),
     AgentSpec("researcher", "Research Agent", "see", "core", "Researches facts, sources, markets, and prior art.", ("source discovery", "evidence synthesis", "conflict checks", "browser inspection"), RESEARCH_TOOLS + BROWSER_TOOLS + COMMON_COLLAB_TOOLS, 0.3, "reasoning"),
     AgentSpec("coder", "Coding Agent", "code", "coding", "Builds features, refactors code, and writes implementation notes.", ("implementation", "refactoring", "integration"), CODE_TOOLS + COMMON_COLLAB_TOOLS, 0.2, "coding"),
+    AgentSpec("backend_api", "Backend API Agent", "code", "coding", "Builds backend routes, data contracts, service logic, validation, auth boundaries, and API integration tests.", ("api routes", "service logic", "database contracts", "auth boundaries", "backend tests"), CODE_TOOLS + COMMON_COLLAB_TOOLS, 0.18, "coding"),
+    AgentSpec("frontend_ui", "Frontend UI Agent", "design", "coding", "Builds frontend UI, state, accessibility, responsive layout, component wiring, and browser-facing flows.", ("components", "state", "accessibility", "responsive UI", "frontend tests"), CODE_TOOLS + BROWSER_TOOLS + COMMON_COLLAB_TOOLS, 0.22, "coding"),
     AgentSpec("reviewer", "Reviewer Agent", "code", "coding", "Reviews quality, correctness, and release readiness.", ("code review", "risk review", "acceptance checks"), CODE_TOOLS + COMMON_COLLAB_TOOLS, 0.15, "coding"),
     AgentSpec("ai_reviewer", "AI Reviewer Agent", "code", "coding", "Reviews every individual agent output before integration, posts PR inline comment payloads, and sends fixes back to the responsible agent.", ("security vulnerability review", "performance review", "logic error review", "PR inline comments", "pre-integration debugging"), REVIEW_TOOLS + COMMON_COLLAB_TOOLS, 0.1, "coding"),
     AgentSpec("writer", "Writer Agent", "design", "creative", "Creates user-facing copy, docs, and summaries.", ("documentation", "release notes", "narrative"), COMMON_COLLAB_TOOLS, 0.35, "chat"),
+    AgentSpec("documentation", "Documentation Agent", "design", "creative", "Writes README updates, install guides, API docs, changelogs, and docs-source-backed implementation notes.", ("readme", "install guide", "api docs", "changelog", "docs integration"), DOC_TOOLS + COMMON_COLLAB_TOOLS, 0.25, "chat"),
     AgentSpec("text_editor", "Text Editor Agent", "design", "creative", "Edits, rewrites, proofreads, and adapts text while preserving intent.", ("line editing", "tone rewrite", "proofreading", "summarization"), COMMON_COLLAB_TOOLS, 0.25, "chat"),
     AgentSpec("prompt_generator", "Prompt Generation Agent", "design", "creative", "Creates concise, reusable prompts for text, voice, image, video, design, browser, and coding agents.", ("prompt design", "negative prompts", "voice prompts", "style prompts", "test prompts"), COMMON_COLLAB_TOOLS, 0.3, "chat"),
     AgentSpec("security", "Security Agent", "code", "coding", "Threat models, audits auth/data flows, and checks abuse paths.", ("threat modeling", "vulnerability checks", "secret handling"), CODE_TOOLS + COMMON_COLLAB_TOOLS, 0.1, "coding"),

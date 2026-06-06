@@ -20,6 +20,11 @@ def test_media_app_registry_includes_requested_apps_and_mockup_video():
     assert "ElevenLabs" in names
     assert "Manus" in names
     assert "Adobe Audition" in names
+    assert "Kling AI" in names
+    assert "Imagine" in names
+    assert "Seedance" in names
+    assert "Highfield" in names
+    assert "Nano Banana" in names
 
     plan = build_mockup_video_plan("coffee website mockup")
     assert plan["steps"]
@@ -59,3 +64,7 @@ def test_default_tool_registry_exposes_new_support_tools():
     assert "plan_voice_workflow" in tools
     assert "plan_temporary_skills" in tools
     assert "discover_environment_support" in tools
+    assert "compact_context" in tools
+    assert "plan_docs_integration" in tools
+    assert "list_mcp_marketplace" in tools
+    assert "plan_mcp_connectors" in tools

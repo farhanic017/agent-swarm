@@ -11,10 +11,14 @@ from typing import Iterable
 from swarm.agents.catalog import create_specialist_agents
 from swarm.config import SwarmConfig
 from swarm.core.ab_testing import run_ab_test
+from swarm.core.context import build_compaction_summary
 from swarm.core.council import run_council_vote
 from swarm.core.dashboard import write_dashboard
+from swarm.core.docs_integration import plan_docs_for_task
 from swarm.core.master_review import build_integration_report, run_master_review
 from swarm.core.media_apps import build_voice_workflow_plan, list_media_apps
+from swarm.core.mcp_marketplace import list_mcp_marketplace, plan_mcp_connectors
+from swarm.core.preflight_review import review_agent_output
 from swarm.core.provider_assignment import assign_hybrid_provider_models, summarize_hybrid_routes
 from swarm.core.state import AgentTurn, SharedState
 from swarm.core.sub_agent_planner import build_sub_agent_plan
@@ -204,6 +208,23 @@ def run_feature_benchmark(config: SwarmConfig, output_dir: str | Path = "example
         }
 
     record("voice_to_text_and_speech_support", voice_feature)
+
+    def context_docs_mcp_security_feature():
+        state = SharedState(user_input="build app with checkout")
+        state.add_turn(AgentTurn(agent_name="frontend_ui", input="build UI", output="Implemented src/app/page.tsx", model="benchmark"))
+        compact = build_compaction_summary(state, project_tree="src/app\nREADME.md", pending=["finish checkout"])
+        docs = plan_docs_for_task("Build Next.js React Tailwind Supabase Stripe checkout")
+        mcp_plan = plan_mcp_connectors("Stripe Shopify Slack Supabase")
+        xss = review_agent_output("frontend_ui", "element.innerHTML = userInput", path="src/App.jsx")
+        return {
+            "compact_command": compact["command"],
+            "docs": [source["name"] for source in docs["sources"]],
+            "mcp_selected": [entry["name"] for entry in mcp_plan["selected"]],
+            "marketplace_count": len(list_mcp_marketplace()),
+            "xss_flagged": not xss.passed,
+        }
+
+    record("compact_docs_mcp_xss_support", context_docs_mcp_security_feature)
 
     def switch_memory_feature():
         memory = SwitchMemory()
@@ -414,6 +435,8 @@ def _score_feature_result(feature: str, value) -> int:
         return 100 if value.get("exists") and value.get("bytes", 0) > 10_000 else 60
     if feature == "voice_to_text_and_speech_support":
         return 100 if value.get("voice_agents") and value.get("audio_apps") and value.get("plan") else 50
+    if feature == "compact_docs_mcp_xss_support":
+        return 100 if value.get("compact_command") == "/compact" and value.get("docs") and value.get("mcp_selected") and value.get("xss_flagged") else 50
     return 90 if value else 50
 
 

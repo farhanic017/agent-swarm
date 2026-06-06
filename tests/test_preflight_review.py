@@ -21,6 +21,19 @@ except:
     assert "Fix coder" in result.fix_prompt
 
 
+def test_preflight_review_flags_xss_patterns():
+    result = review_agent_output(
+        "frontend_ui",
+        "element.innerHTML = userInput\n<div>{{ userInput }}</div>",
+        path="src/App.jsx",
+    )
+
+    assert not result.passed
+    rules = " ".join(comment.body for comment in result.comments)
+    assert "xss_raw_html_assignment" in rules
+    assert "xss_unescaped_template" in rules
+
+
 def test_preflight_review_formats_pr_inline_comments():
     result = review_agent_output("coder", "eval(user_input)", path="src/app.py")
     comments = format_github_review_comments(result, commit_id="abc123")

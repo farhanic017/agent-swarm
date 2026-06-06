@@ -9,6 +9,10 @@ SECURITY_PATTERNS = (
     ("shell_injection", re.compile(r"(?i)(shell=True|os\.system\(|subprocess\.(call|run|Popen)\([^)]*\+)")),
     ("unsafe_eval", re.compile(r"\b(eval|exec)\s*\(")),
     ("sql_injection", re.compile(r"(?i)(select|insert|update|delete).*(\+|f['\"])")),
+    ("xss_dangerous_inner_html", re.compile(r"dangerouslySetInnerHTML\s*=\s*\{\s*\{")),
+    ("xss_raw_html_assignment", re.compile(r"\.innerHTML\s*=\s*[^;\n]*(user|input|html|content|query|param)", re.IGNORECASE)),
+    ("xss_unescaped_template", re.compile(r"<[^>]+>\s*\{\{\s*(user|input|html|content|query|param)[^}]*\}\}", re.IGNORECASE)),
+    ("xss_script_injection", re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL)),
 )
 
 PERFORMANCE_PATTERNS = (

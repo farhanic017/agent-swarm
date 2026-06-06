@@ -1,10 +1,10 @@
 {
   "feature_summary": {
-    "features": 10,
-    "successes": 10,
+    "features": 11,
+    "successes": 11,
     "failures": 0,
-    "avg_latency_seconds": 0.0018,
-    "avg_score": 96,
+    "avg_latency_seconds": 0.0019,
+    "avg_score": 96.4,
     "errors": {}
   },
   "features": [
@@ -14,28 +14,28 @@
       "elapsed_seconds": 0.0002,
       "score": 100,
       "details": {
-        "agents": 27,
+        "agents": 30,
         "pillars": [
           "act",
           "code",
           "design",
           "see"
         ],
-        "meshed_agents": 27
+        "meshed_agents": 30
       },
       "error": ""
     },
     {
       "feature": "smart_ai_selection_hybrid_routing",
       "ok": true,
-      "elapsed_seconds": 0.0147,
+      "elapsed_seconds": 0.017,
       "score": 100,
       "details": {
-        "assignments": 81,
+        "assignments": 90,
         "routes": {
           "local": 0,
           "mcp": 0,
-          "cloud": 81
+          "cloud": 90
         },
         "providers": [
           "azure-openai",
@@ -79,11 +79,11 @@
           "triage": "B",
           "researcher": "B",
           "coder": "B",
+          "backend_api": "B",
+          "frontend_ui": "B",
           "reviewer": "B",
           "ai_reviewer": "B",
-          "writer": "B",
-          "text_editor": "B",
-          "prompt_generator": "B"
+          "writer": "B"
         },
         "summary": "Council selected version B: Hybrid Multi-Agent Plan. Vote A/B: 0/8. Alternative shown: A: Lean Single-Path Plan."
       },
@@ -109,8 +109,8 @@
       "elapsed_seconds": 0.0001,
       "score": 90,
       "details": {
-        "planned_agents": 92,
-        "parents": 27,
+        "planned_agents": 101,
+        "parents": 30,
         "sample": [
           {
             "parent_agent": "triage",
@@ -204,6 +204,32 @@
       "error": ""
     },
     {
+      "feature": "compact_docs_mcp_xss_support",
+      "ok": true,
+      "elapsed_seconds": 0.0006,
+      "score": 100,
+      "details": {
+        "compact_command": "/compact",
+        "docs": [
+          "Next.js docs",
+          "React docs",
+          "Tailwind CSS docs",
+          "Supabase docs",
+          "Stripe docs"
+        ],
+        "mcp_selected": [
+          "Unthread",
+          "Supabase",
+          "Stripe",
+          "Slack",
+          "Shopify"
+        ],
+        "marketplace_count": 137,
+        "xss_flagged": true
+      },
+      "error": ""
+    },
+    {
       "feature": "replacement_model_memory",
       "ok": true,
       "elapsed_seconds": 0.0001,
@@ -238,11 +264,11 @@
     {
       "feature": "real_time_dashboard_export",
       "ok": true,
-      "elapsed_seconds": 0.0016,
+      "elapsed_seconds": 0.002,
       "score": 100,
       "details": {
         "path": "examples\\feature_benchmark_dashboard.html",
-        "bytes": 60352,
+        "bytes": 65245,
         "exists": true
       },
       "error": ""

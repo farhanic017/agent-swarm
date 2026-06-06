@@ -12,6 +12,9 @@ from swarm.core.messaging import MessageHub
 from swarm.core.brainstorm import BrainstormEngine
 from swarm.core.debug_collab import DebugCollaboration
 from swarm.core.learning import LessonLearner
+from swarm.core.context import build_compaction_summary, format_compaction_summary
+from swarm.core.docs_integration import plan_docs_for_task
+from swarm.core.mcp_marketplace import list_mcp_marketplace, plan_mcp_connectors
 from swarm.core.preflight_review import review_agent_output, format_github_review_comments
 from swarm.core.media_apps import list_media_apps, build_mockup_video_plan, build_voice_workflow_plan
 from swarm.core.skill_runtime import plan_required_skills
@@ -155,6 +158,7 @@ class ToolRegistry:
         registry._register_preflight_review_tools()
         registry._register_media_app_tools()
         registry._register_environment_tools()
+        registry._register_context_docs_mcp_tools()
 
         return registry
 
@@ -435,6 +439,65 @@ class ToolRegistry:
             description="Detect local model runtimes, CLI agents, IDE agents, and common MCP support without blocking on unavailable tools.",
             func=lambda: json.dumps(discover_environment_support(), indent=2),
             parameters={"type": "object", "properties": {}, "required": []},
+        ))
+
+    def _register_context_docs_mcp_tools(self):
+        def _compact_context(task: str, summary: str = "", pending: str = "", project_tree: str = ""):
+            state = SharedState(user_input=task, summary=summary)
+            pending_items = [item.strip() for item in pending.split("\n") if item.strip()]
+            compact = build_compaction_summary(state, project_tree=project_tree, pending=pending_items)
+            return format_compaction_summary(compact)
+
+        self.register(Tool(
+            name="compact_context",
+            description="Create a /compact summary preserving architecture, completed work, pending work, decisions, risks, and next-agent instructions.",
+            func=_compact_context,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "pending": {"type": "string", "description": "Newline-separated pending items"},
+                    "project_tree": {"type": "string"},
+                },
+                "required": ["task"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_docs_integration",
+            description="Select framework/API documentation sources agents should consult before generating code.",
+            func=lambda task: json.dumps(plan_docs_for_task(task), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"task": {"type": "string"}},
+                "required": ["task"],
+            },
+        ))
+        self.register(Tool(
+            name="list_mcp_marketplace",
+            description="List supported MCP marketplace connectors by category or search query.",
+            func=lambda category=None, query=None: json.dumps(list_mcp_marketplace(category, query), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string"},
+                    "query": {"type": "string"},
+                },
+                "required": [],
+            },
+        ))
+        self.register(Tool(
+            name="plan_mcp_connectors",
+            description="Plan which MCP connectors are relevant for a task without enabling broad access by default.",
+            func=lambda task, limit=8: json.dumps(plan_mcp_connectors(task, limit), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string"},
+                    "limit": {"type": "integer"},
+                },
+                "required": ["task"],
+            },
         ))
 
     def _register_graph_tools(self):
