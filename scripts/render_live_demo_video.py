@@ -226,6 +226,70 @@ def scene_agents(draw, local: int):
     draw_text(draw, (413, 565), "spawn_agent lets any specialist delegate focused work", fill=MUTED, fnt=F_BODY)
 
 
+def scene_connected_graph(draw, local: int):
+    draw_text(draw, (58, 104), "Live connected agent graph: everyone working together", fnt=F_H1)
+    draw_text(draw, (62, 145), "Colored nodes show active agents, providers, sub-agents, shared messages, and work flowing between pillars.", fill=MUTED, fnt=F_SMALL)
+    graph_agents = [
+        ("coder", "mistral", 92, 208, GREEN),
+        ("reviewer", "openrouter", 92, 288, GREEN),
+        ("security", "fireworks", 92, 368, RED),
+        ("testing", "groq", 92, 448, BLUE),
+        ("debugging", "qwen", 92, 528, GREEN),
+        ("researcher", "azure", 360, 205, BLUE),
+        ("analytics", "zai", 360, 295, GREEN),
+        ("ux_research", "cloudflare", 360, 385, BLUE),
+        ("photo_editor", "vision", 360, 475, PINK),
+        ("writer", "claude", 632, 205, PURPLE),
+        ("localization", "mistral", 632, 295, PURPLE),
+        ("design", "gemini", 632, 385, PURPLE),
+        ("figma_controller", "browser", 632, 475, PINK),
+        ("marketing", "google-ai", 1002, 205, AMBER),
+        ("finance", "azure", 1002, 285, AMBER),
+        ("trading", "mcp", 1002, 365, AMBER),
+        ("product_manager", "openrouter", 1002, 445, AMBER),
+        ("council_master", "fireworks", 1002, 525, AMBER),
+    ]
+    positions = {name: (x, y) for name, _, x, y, _ in graph_agents}
+    edges = [
+        ("coder", "researcher"), ("coder", "design"), ("reviewer", "analytics"), ("security", "design"),
+        ("testing", "ux_research"), ("debugging", "figma_controller"), ("researcher", "writer"),
+        ("researcher", "design"), ("analytics", "localization"), ("analytics", "marketing"),
+        ("ux_research", "design"), ("photo_editor", "design"), ("writer", "marketing"),
+        ("writer", "product_manager"), ("localization", "finance"), ("design", "marketing"),
+        ("design", "finance"), ("design", "trading"), ("design", "product_manager"),
+        ("figma_controller", "council_master"), ("security", "council_master"), ("testing", "council_master"),
+        ("hermes", "design"),
+    ]
+    positions["hermes"] = (632, 535)
+    for idx, (source, target) in enumerate(edges):
+        if source not in positions or target not in positions:
+            continue
+        x1, y1 = positions[source]
+        x2, y2 = positions[target]
+        color = (34, 197, 142) if idx % 3 == 0 else (52, 65, 88)
+        draw.line((x1, y1, x2, y2), fill=color, width=2 if idx % 3 == 0 else 1)
+        phase = ((local * 0.018) + idx * 0.071) % 1.0
+        px = x1 + (x2 - x1) * phase
+        py = y1 + (y2 - y1) * phase
+        draw.ellipse((px - 5, py - 5, px + 5, py + 5), fill=GREEN if idx % 2 == 0 else BLUE)
+    draw_round(draw, (558, 344, 706, 428), 20, (38, 25, 72), PURPLE, 3)
+    draw_text(draw, (632, 374), "design", fill=TEXT, fnt=F_H2, anchor="mm")
+    draw_text(draw, (632, 403), "hub", fill=MUTED, fnt=F_TINY, anchor="mm")
+    for name, provider, x, y, color in graph_agents:
+        if name == "design":
+            continue
+        active = (local // 9 + len(name)) % 4 != 0
+        radius = 18 + (5 * math.sin((local + x + y) / 13) if active else 0)
+        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=(18, 28, 44), outline=color, width=3)
+        draw.ellipse((x + 22, y - 22, x + 32, y - 12), fill=GREEN if active else MUTED)
+        draw_text(draw, (x, y + 32), name, fill=TEXT, fnt=F_TINY, anchor="mm")
+        draw_text(draw, (x, y + 50), provider, fill=MUTED, fnt=F_TINY, anchor="mm")
+    hx, hy = positions["hermes"]
+    draw.ellipse((hx - 18, hy - 18, hx + 18, hy + 18), fill=(18, 28, 44), outline=PURPLE, width=3)
+    draw_text(draw, (hx, hy + 33), "hermes", fill=TEXT, fnt=F_TINY, anchor="mm")
+    draw_text(draw, (hx, hy + 51), "skills", fill=MUTED, fnt=F_TINY, anchor="mm")
+
+
 def scene_routing(draw, local: int):
     panel(draw, (54, 108, 462, 542), "Smart AI Selection", [
         "coding -> Codestral/Qwen/local",
@@ -372,15 +436,16 @@ def scene_finish(draw, local: int):
 
 
 SCENES = [
-    (0, 5, scene_intro),
-    (5, 11, scene_architecture),
-    (11, 17, scene_council),
-    (17, 23, scene_agents),
-    (23, 29, scene_routing),
-    (29, 35, scene_dashboard),
-    (35, 41, scene_tools),
-    (41, 47, scene_media),
-    (47, 53, scene_security),
+    (0, 4, scene_intro),
+    (4, 9, scene_architecture),
+    (9, 14, scene_council),
+    (14, 19, scene_agents),
+    (19, 25, scene_connected_graph),
+    (25, 30, scene_routing),
+    (30, 36, scene_dashboard),
+    (36, 42, scene_tools),
+    (42, 48, scene_media),
+    (48, 53, scene_security),
     (53, 58, scene_hermes),
     (58, 60, scene_finish),
 ]
