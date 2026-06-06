@@ -48,6 +48,14 @@ APP_BUILD_TOOLS = (
     "plan_backend_maker",
 )
 
+HERMES_EVOLUTION_TOOLS = (
+    "plan_hermes_evolution",
+    "propose_hermes_skill",
+    "validate_hermes_skill",
+    "persist_hermes_skill",
+    "list_hermes_skills",
+)
+
 DESIGN_3D_TOOLS = (
     "plan_3d_design_model",
     "classify_3d_design_request",
@@ -116,6 +124,7 @@ AGENT_MODEL_PREFERENCES = {
     "voice_transcriber": "speech_to_text",
     "voice_generator": "text_to_speech",
     "figma_controller": "vision",
+    "hermes": "reasoning",
     "text_editor": "chat",
     "prompt_generator": "chat",
     "documentation": "chat",
@@ -151,6 +160,7 @@ AGENT_SUB_AGENT_ROLES = {
     "photo_editor": ("design", "ux_research", "figma_controller"),
     "video_editor": ("animator", "design", "writer", "marketing", "prompt_generator"),
     "animator": ("video_editor", "design", "prompt_generator", "figma_controller"),
+    "hermes": ("researcher", "coder", "testing", "documentation"),
     "voice_transcriber": ("writer", "localization", "analytics"),
     "voice_generator": ("writer", "localization", "video_editor"),
     "figma_controller": ("design", "ux_research", "coder"),
@@ -165,6 +175,7 @@ AGENT_SUB_AGENT_ROLES = {
 
 AGENT_SPECS: tuple[AgentSpec, ...] = (
     AgentSpec("triage", "Triage Agent", "act", "core", "Routes work to the best specialist.", ("classify requests", "split tasks", "handoff"), COMMON_COLLAB_TOOLS, 0.2),
+    AgentSpec("hermes", "Hermes Self-Evolution Agent", "act", "core", "Observes repeated work patterns, creates reusable skills, validates them, versions them, and feeds approved skills back into future swarm runs.", ("self evolution", "skill creation", "skill validation", "versioned memory", "reuse planning"), HERMES_EVOLUTION_TOOLS + COMMON_COLLAB_TOOLS, 0.18, "reasoning"),
     AgentSpec("researcher", "Research Agent", "see", "core", "Researches facts, sources, markets, and prior art.", ("source discovery", "evidence synthesis", "conflict checks", "browser inspection"), RESEARCH_TOOLS + BROWSER_TOOLS + COMMON_COLLAB_TOOLS, 0.3, "reasoning"),
     AgentSpec("web_scraper", "Web Scraper Agent", "see", "coding", "Plans and runs compliant web scraping with browser/API fallback, source tracking, extraction validation, and rate-limit guardrails.", ("web scraping", "browser extraction", "structured data", "source tracking", "rate-limit planning"), WEB_JOB_TOOLS + BROWSER_TOOLS + RESEARCH_TOOLS + COMMON_COLLAB_TOOLS, 0.18, "coding"),
     AgentSpec("coder", "Coding Agent", "code", "coding", "Builds features, refactors code, and writes implementation notes.", ("implementation", "refactoring", "integration"), CODE_TOOLS + COMMON_COLLAB_TOOLS, 0.2, "coding"),

@@ -16,6 +16,13 @@ from swarm.core.context import build_compaction_summary, format_compaction_summa
 from swarm.core.docs_integration import plan_docs_for_task
 from swarm.core.file_access import describe_file_access_policy, secure_list_directory, secure_read_file, secure_write_file
 from swarm.core.graphify import build_graphify_payload, build_graphify_project_map, export_graphify_payload
+from swarm.core.hermes_evolution import (
+    build_hermes_evolution_plan,
+    list_hermes_skills,
+    persist_hermes_skill,
+    propose_hermes_skill,
+    validate_hermes_skill,
+)
 from swarm.core.mcp_marketplace import list_mcp_marketplace, plan_mcp_connectors
 from swarm.core.obsidian import build_obsidian_note, plan_obsidian_vault
 from swarm.core.preflight_review import review_agent_output, format_github_review_comments
@@ -171,6 +178,7 @@ class ToolRegistry:
         registry._register_preflight_review_tools()
         registry._register_media_app_tools()
         registry._register_workflow_planner_tools()
+        registry._register_hermes_evolution_tools()
         registry._register_environment_tools()
         registry._register_knowledge_app_tools()
         registry._register_context_docs_mcp_tools()
@@ -552,6 +560,75 @@ class ToolRegistry:
                 "type": "object",
                 "properties": {"prompt": {"type": "string"}, "framework": {"type": "string"}},
                 "required": ["prompt"],
+            },
+        ))
+
+    def _register_hermes_evolution_tools(self):
+        self.register(Tool(
+            name="plan_hermes_evolution",
+            description="Plan Hermes-style self-evolution: observe reusable patterns, propose skills, validate safety gates, version manifests, and reuse approved skills.",
+            func=lambda task, current_skills="": json.dumps(
+                build_hermes_evolution_plan(task, [item.strip() for item in current_skills.split(",") if item.strip()]),
+                indent=2,
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string"},
+                    "current_skills": {"type": "string", "description": "Comma-separated existing skill names"},
+                },
+                "required": ["task"],
+            },
+        ))
+        self.register(Tool(
+            name="propose_hermes_skill",
+            description="Create a candidate reusable skill from a task, outcome, and lesson learned.",
+            func=lambda task, outcome, lesson, agent_name="hermes": json.dumps(
+                propose_hermes_skill(task, outcome, lesson, agent_name),
+                indent=2,
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string"},
+                    "outcome": {"type": "string"},
+                    "lesson": {"type": "string"},
+                    "agent_name": {"type": "string"},
+                },
+                "required": ["task", "outcome", "lesson"],
+            },
+        ))
+        self.register(Tool(
+            name="validate_hermes_skill",
+            description="Validate a Hermes evolved skill JSON manifest for safety, reuse, and bounded size.",
+            func=lambda skill_json: json.dumps(validate_hermes_skill(json.loads(skill_json)), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"skill_json": {"type": "string"}},
+                "required": ["skill_json"],
+            },
+        ))
+        self.register(Tool(
+            name="persist_hermes_skill",
+            description="Persist a validated Hermes skill JSON manifest as versioned files under a scoped skill root.",
+            func=lambda skill_json, root=".swarm_evolved_skills": json.dumps(persist_hermes_skill(json.loads(skill_json), root), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "skill_json": {"type": "string"},
+                    "root": {"type": "string"},
+                },
+                "required": ["skill_json"],
+            },
+        ))
+        self.register(Tool(
+            name="list_hermes_skills",
+            description="List persisted Hermes evolved skills and versions.",
+            func=lambda root=".swarm_evolved_skills": json.dumps(list_hermes_skills(root), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"root": {"type": "string"}},
+                "required": [],
             },
         ))
 

@@ -106,6 +106,11 @@ def test_default_tool_registry_exposes_new_support_tools():
     assert "plan_app_tester" in tools
     assert "plan_app_builder" in tools
     assert "plan_backend_maker" in tools
+    assert "plan_hermes_evolution" in tools
+    assert "propose_hermes_skill" in tools
+    assert "validate_hermes_skill" in tools
+    assert "persist_hermes_skill" in tools
+    assert "list_hermes_skills" in tools
 
 
 def test_user_owned_designs_are_allowed_for_direct_3d_modeling():

@@ -3,8 +3,8 @@
 [![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
-![version: v5](https://img.shields.io/badge/version-v5-2563eb)
-![tests: 293 passed](https://img.shields.io/badge/tests-293%20passed-16a34a)
+![version: v6](https://img.shields.io/badge/version-v6-2563eb)
+![tests: 298 passed](https://img.shields.io/badge/tests-298%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -113,6 +113,7 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 - **Manus support** detects `MANUS_API_KEY`, `MANUS_BASE_URL`/`MANUS_ENDPOINT`, and `MANUS_MODEL`, then routes Manus as a built-in OpenAI-compatible agent/workflow provider.
 - **ElevenLabs support** detects `ELEVENLABS_API_KEY`, `ELEVENLABS_STT_MODEL`, and `ELEVENLABS_TTS_MODEL`, then routes native speech-to-text and text-to-speech requests through the ElevenLabs adapter.
 - **Hermes support** recognizes Hermes/Nous model names as chat+reasoning capable options for writing, analytics, council, and planning work.
+- **Hermes self-evolution agent** turns repeated successful work into reusable skills. It observes completed tasks, proposes small scoped skills, validates safety/reuse gates, versions JSON manifests plus `SKILL.md`, lists approved evolved skills, and lets future swarm runs reuse them after master review.
 - **Per-agent sub-agents** are built in. Each specialist has default helper roles and access to the `spawn_agent` tool for delegating focused work when needed.
 - **AI Reviewer Agent** reviews every individual agent output before integration for security vulnerabilities, performance issues, and logic errors. It produces GitHub PR inline comment payloads and routes fixes back to the responsible agent before the master connects the project parts.
 - **XSS validation** flags risky raw HTML rendering such as `dangerouslySetInnerHTML`, `innerHTML = userInput`, unescaped template HTML, and injected `<script>` blocks before frontend work is integrated.
@@ -428,7 +429,13 @@ agent-swarm/
 
 ## Version History
 
-### v5 (Current) - Graphify, Obsidian & Scoped File Security
+### v6 (Current) - Hermes Self-Evolution & Skill Creation
+- Added a dedicated Hermes self-evolution agent that can observe repeated work, propose reusable skills, validate them, persist versioned manifests, and expose evolved skills for future swarm runs.
+- Added Hermes evolution tools: `plan_hermes_evolution`, `propose_hermes_skill`, `validate_hermes_skill`, `persist_hermes_skill`, and `list_hermes_skills`.
+- Added guardrails so evolved skills stay small, scoped, reviewed, credential-safe, and versioned before reuse.
+- Expanded regression coverage for Hermes planning, skill proposal, unsafe-skill rejection, persistence/listing, registry wiring, and catalog wiring to 298 passing tests.
+
+### v5 - Graphify, Obsidian & Scoped File Security
 - Added built-in Graphify project maps, agent/artifact graph payloads, and guarded Graphify JSON export tooling.
 - Added built-in Obsidian vault planning, markdown note generation, backlinks, tags, and graph-view clusters for project knowledge bases.
 - Added permissive user-owned design-to-3D planning for buildings, products, floor plans, original characters, CAD notes, sketches, and reference photos.
