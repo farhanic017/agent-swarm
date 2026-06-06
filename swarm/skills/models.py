@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 import re
 
@@ -21,7 +22,7 @@ _YAML_FRONT_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)", re.DOTALL)
 
 def parse_skill_md(path: str) -> Optional[Skill]:
     try:
-        raw = open(path, "r", encoding="utf-8").read()
+        raw = Path(path).read_text(encoding="utf-8")
     except Exception:
         return None
 
