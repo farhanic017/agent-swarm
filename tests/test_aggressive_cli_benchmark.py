@@ -211,6 +211,23 @@ def test_public_benchmark_intelligence_and_speed_use_refreshed_sources():
     assert points["Qwen3 Coder 480B"]["speed"] == 60.9
 
 
+def test_public_benchmark_coding_metrics_use_refreshed_sources():
+    points = {point["name"]: point for point in PUBLIC_BENCHMARK_POINTS}
+
+    assert points["GPT-5.5"]["swe_bench_pro"] == 56.1
+    assert points["GPT-5.5"]["terminal_bench"] == 60.6
+    assert points["GPT-5.5"]["coding"] == 59.1
+    assert points["Claude Opus 4.8"]["swe_bench_pro"] == 53.5
+    assert points["Claude Opus 4.8"]["terminal_bench"] == 58.3
+    assert points["Claude Opus 4.8"]["coding"] == 56.7
+    assert points["Kimi K2.6"]["swe_bench_pro"] == 53.5
+    assert points["Kimi K2.6"]["terminal_bench"] == 43.9
+    assert points["Kimi K2.6"]["coding"] == 47.1
+    assert points["MiMo V2.5 Pro"]["swe_bench_pro"] == 50.2
+    assert points["MiniMax M2"]["coding"] == 29.2
+    assert points["Gemini 2.5 Pro"]["terminal_bench"] == 26.5
+
+
 def test_agent_swarm_price_is_low_but_not_unrealistically_flat():
     points = build_comparison_card_points({"comparison": {}, "swarm_complex_work": {"agent_count": 12, "sub_agent_count": 20}})
     swarm = next(point for point in points if point["name"] == "Agent Swarm")
