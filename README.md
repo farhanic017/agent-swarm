@@ -3,6 +3,7 @@
 [![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
+![version: v4](https://img.shields.io/badge/version-v4-2563eb)
 ![tests: 274 passed](https://img.shields.io/badge/tests-274%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
@@ -417,16 +418,19 @@ agent-swarm/
 
 ## Version History
 
-### v3 (Current) - Preflight AI Review, Skills, Apps & Local Runtime Support
-- Added dedicated `ai_reviewer` agent for per-agent security, performance, and logic review before integration.
-- Added GitHub PR inline comment payload generation and master-review blocking for unresolved preflight issues.
+### v4 (Current) - Compact Context, MCP Marketplace, Docs & Security Expansion
 - Added explicit XSS validation for raw HTML rendering and script injection patterns.
 - Added `/compact` context summaries for long sessions, architecture-first onboarding, pending-work handoff, and token-efficient continuation.
 - Added docs integration planning for framework/API references before code generation.
 - Added MCP marketplace directory and task-scoped connector planning across dev, productivity, design, CRM, finance, commerce, marketing, legal, research, healthcare, travel, music, and specialized tools.
+- Added backend API, frontend UI, and documentation agents for common multi-agent work splits.
+- Added expanded media model/app detection for Kling AI, Imagine, Seedance/Sedance, Highfield, and Nano Banana.
+
+### v3 - Preflight AI Review, Skills, Apps & Local Runtime Support
+- Added dedicated `ai_reviewer` agent for per-agent security, performance, and logic review before integration.
+- Added GitHub PR inline comment payload generation and master-review blocking for unresolved preflight issues.
 - Added mockup video planning and broad photo/video/design app adapter registry including Adobe, DaVinci Resolve, CapCut, Blender, Figma, Stable Diffusion, ComfyUI, Runway, Pika, and Kling.
 - Added voice-to-text and text-to-speech agents, OpenAI-compatible audio routes, native ElevenLabs STT/TTS, and Manus provider discovery.
-- Added backend API, frontend UI, and documentation agents for common multi-agent work splits.
 - Added temporary skill planning, run-scoped skill install manifests, and automatic cleanup after agents finish.
 - Added local model runtime, CLI agent, IDE agent, and MCP support discovery.
 - Added smoother token/lag guardrails through deterministic preflight checks, bounded discovery, cooldown-aware model fallback, and cleanup.
