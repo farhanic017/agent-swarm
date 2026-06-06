@@ -100,6 +100,18 @@ TEXT_TO_SPEECH_KEYWORDS = [
     "voice",
     "eleven",
 ]
+VISION_KEYWORDS = [
+    "vision",
+    "multimodal",
+    "gpt-4o",
+    "gpt-4.1",
+    "gemini",
+    "claude",
+    "image",
+    "video",
+    "scout",
+    "flash",
+]
 
 LOCAL_MODEL_PORTS = [
     ("ollama", 11434),
@@ -137,9 +149,13 @@ def _model_supports(model_name: str, model_config: dict | None, kind: str) -> bo
     modality_text = " ".join(str(item).lower() for item in modalities)
     if kind in modality_text or f"{kind}_generation" in modality_text or f"{kind}-generation" in modality_text:
         return True
+    if kind == "vision" and any(token in modality_text for token in ("image", "video", "multimodal", "vision")):
+        return True
 
     model_type = str(cfg.get("type") or cfg.get("kind") or cfg.get("mode") or "").lower()
     if kind in model_type and "generation" in model_type:
+        return True
+    if kind == "vision" and any(token in model_type for token in ("vision", "multimodal", "image", "video")):
         return True
 
     lower = model_name.lower()
@@ -151,6 +167,8 @@ def _model_supports(model_name: str, model_config: dict | None, kind: str) -> bo
         keywords = SPEECH_TO_TEXT_KEYWORDS
     elif kind in {"text_to_speech", "speech_synthesis"}:
         keywords = TEXT_TO_SPEECH_KEYWORDS
+    elif kind == "vision":
+        keywords = VISION_KEYWORDS
     else:
         keywords = []
     return any(token in lower for token in keywords)
@@ -481,6 +499,10 @@ class SwarmConfig:
         models = self.get_media_models("video")
         return models[0] if models else None
 
+    def get_best_vision_model(self) -> Optional[str]:
+        models = self.get_media_models("vision")
+        return models[0] if models else None
+
     def get_best_speech_to_text_model(self) -> Optional[str]:
         models = self.get_media_models("speech_to_text")
         return models[0] if models else None
@@ -496,6 +518,10 @@ class SwarmConfig:
                 return m
         if preference in {"video", "video_generation", "video-generation"}:
             m = self.get_best_video_model()
+            if m:
+                return m
+        if preference in {"vision", "multimodal", "temporary_vision"}:
+            m = self.get_best_vision_model()
             if m:
                 return m
         if preference in {"speech_to_text", "speech-to-text", "transcription", "audio_transcription"}:

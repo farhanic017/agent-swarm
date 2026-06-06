@@ -3,7 +3,7 @@ from pathlib import Path
 from swarm.core import environment_support
 from swarm.core.environment_support import discover_environment_support
 from swarm.core.design_policy import classify_3d_design_request
-from swarm.core.media_apps import build_3d_modeling_plan, build_mockup_video_plan, build_voice_workflow_plan, list_media_apps
+from swarm.core.media_apps import build_3d_modeling_plan, build_animation_plan, build_mockup_video_plan, build_voice_workflow_plan, list_media_apps
 from swarm.core.skill_runtime import create_temporary_skill_session, plan_required_skills
 from swarm.tools.registry import ToolRegistry
 
@@ -31,6 +31,12 @@ def test_media_app_registry_includes_requested_apps_and_mockup_video():
     plan = build_mockup_video_plan("coffee website mockup")
     assert plan["steps"]
     assert plan["performance_guardrails"]["final_render_requires_user_approval"]
+
+    animation = build_animation_plan("animate an app onboarding flow", "After Effects", "smooth SaaS")
+    assert animation["type"] == "animator"
+    assert animation["selected_app"]["name"] == "Adobe After Effects"
+    assert "keyframes" in " ".join(animation["steps"])
+    assert animation["performance_guardrails"]["use_proxy_assets"]
 
     voice_plan = build_voice_workflow_plan("turn product copy into voiceover", "text_to_speech")
     assert voice_plan["mode"] == "text_to_speech"
@@ -83,6 +89,7 @@ def test_default_tool_registry_exposes_new_support_tools():
     assert "format_pr_inline_comments" in tools
     assert "list_media_app_adapters" in tools
     assert "plan_mockup_video" in tools
+    assert "plan_animation" in tools
     assert "plan_voice_workflow" in tools
     assert "plan_temporary_skills" in tools
     assert "discover_environment_support" in tools
@@ -92,6 +99,13 @@ def test_default_tool_registry_exposes_new_support_tools():
     assert "plan_mcp_connectors" in tools
     assert "plan_3d_design_model" in tools
     assert "classify_3d_design_request" in tools
+    assert "plan_temporary_vision" in tools
+    assert "plan_web_scraper" in tools
+    assert "plan_job_finder_applier" in tools
+    assert "plan_building_design" in tools
+    assert "plan_app_tester" in tools
+    assert "plan_app_builder" in tools
+    assert "plan_backend_maker" in tools
 
 
 def test_user_owned_designs_are_allowed_for_direct_3d_modeling():

@@ -117,7 +117,7 @@ def _candidate(provider: str, model: str) -> dict:
         specialties.add("reasoning")
     if any(token in model_lower for token in ("hermes", "nous")):
         specialties.update({"chat", "reasoning"})
-    if any(token in model_lower for token in ("vision", "multimodal", "image", "flash", "scout")):
+    if any(token in model_lower for token in ("vision", "multimodal", "gpt-4o", "gemini", "claude", "image", "flash", "scout")):
         specialties.add("vision")
     if any(token in model_lower for token in ("image", "img", "dall-e", "dalle", "gpt-image", "imagen", "flux", "imagine", "nano-banana", "nanobanana", "banana", "stable-diffusion", "sdxl")):
         specialties.update({"image_generation", "vision"})

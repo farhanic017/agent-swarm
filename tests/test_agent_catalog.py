@@ -35,6 +35,13 @@ def test_requested_business_and_creative_agents_exist():
         "backend_api",
         "frontend_ui",
         "documentation",
+        "web_scraper",
+        "job_finder",
+        "building_designer",
+        "animator",
+        "app_tester",
+        "app_builder",
+        "backend_maker",
     }
     assert required.issubset(agents)
     assert agents["photo_editor"].task_type == "image_generation"
@@ -51,6 +58,14 @@ def test_requested_business_and_creative_agents_exist():
     assert "browser_open" in agents["figma_controller"].tools
     assert "browser_snapshot" in agents["testing"].tools
     assert "preflight_review_agent_work" in agents["ai_reviewer"].tools
+    assert "plan_temporary_vision" in agents["coder"].tools
+    assert "plan_web_scraper" in agents["web_scraper"].tools
+    assert "plan_job_finder_applier" in agents["job_finder"].tools
+    assert "plan_building_design" in agents["building_designer"].tools
+    assert "plan_animation" in agents["animator"].tools
+    assert "plan_app_tester" in agents["app_tester"].tools
+    assert "plan_app_builder" in agents["app_builder"].tools
+    assert "plan_backend_maker" in agents["backend_maker"].tools
 
 
 def test_agents_have_model_preferences_and_sub_agent_roles():
@@ -60,6 +75,9 @@ def test_agents_have_model_preferences_and_sub_agent_roles():
     assert agents["video_editor"].model_preference == "video_generation"
     assert agents["voice_transcriber"].model_preference == "speech_to_text"
     assert agents["voice_generator"].model_preference == "text_to_speech"
+    assert agents["building_designer"].model_preference == "vision"
+    assert agents["animator"].model_preference == "video_generation"
+    assert agents["app_builder"].model_preference == "coding"
     assert agents["council_master"].model_preference == "reasoning"
     assert "testing" in agents["coder"].sub_agent_roles
     assert "spawn_agent" in agents["coder"].tools

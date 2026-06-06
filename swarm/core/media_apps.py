@@ -70,7 +70,10 @@ def build_mockup_video_plan(prompt: str, app: str = "auto") -> dict:
         adapter for adapter in MEDIA_APP_ADAPTERS
         if "mockup_video" in adapter.capabilities or adapter.category in {"motion", "3d", "video_ai"}
     ]
-    selected = preferred[0] if app == "auto" else next((item for item in MEDIA_APP_ADAPTERS if item.name.lower() == app.lower()), preferred[0])
+    selected = preferred[0] if app == "auto" else next(
+        (item for item in MEDIA_APP_ADAPTERS if item.name.lower() == app.lower() or app.lower() in item.name.lower()),
+        preferred[0],
+    )
     return {
         "prompt": prompt,
         "selected_app": selected.to_dict(),
@@ -84,6 +87,45 @@ def build_mockup_video_plan(prompt: str, app: str = "auto") -> dict:
         "performance_guardrails": {
             "preview_resolution": "720p",
             "draft_fps": 24,
+            "final_render_requires_user_approval": True,
+        },
+    }
+
+
+def build_animation_plan(prompt: str, app: str = "auto", style: str = "auto") -> dict:
+    preferred = [
+        adapter for adapter in MEDIA_APP_ADAPTERS
+        if adapter.category in {"motion", "3d", "video", "video_ai", "image_video_ai"}
+        or "animation" in adapter.capabilities
+        or "motion_graphics" in adapter.capabilities
+    ]
+    selected = preferred[0] if app == "auto" else next(
+        (item for item in MEDIA_APP_ADAPTERS if item.name.lower() == app.lower() or app.lower() in item.name.lower()),
+        preferred[0],
+    )
+    return {
+        "type": "animator",
+        "prompt": prompt,
+        "style": style,
+        "selected_app": selected.to_dict(),
+        "steps": [
+            "define animation goal, duration, aspect ratio, audience, and delivery format",
+            "create storyboard beats, camera moves, timing, and motion arcs",
+            "prepare assets, rigs, layers, masks, materials, or generated frames",
+            "animate keyframes, easing, transitions, captions, effects, and sound cues",
+            "render lightweight preview, inspect frame continuity, then export final video or animation assets",
+        ],
+        "quality_checks": [
+            "no broken motion paths or missing frames",
+            "timing matches storyboard beats",
+            "text and UI remain readable during motion",
+            "camera framing preserves important objects",
+            "preview render is approved before expensive final render",
+        ],
+        "performance_guardrails": {
+            "draft_resolution": "720p",
+            "draft_fps": 24,
+            "use_proxy_assets": True,
             "final_render_requires_user_approval": True,
         },
     }

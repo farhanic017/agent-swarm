@@ -20,9 +20,18 @@ from swarm.core.mcp_marketplace import list_mcp_marketplace, plan_mcp_connectors
 from swarm.core.obsidian import build_obsidian_note, plan_obsidian_vault
 from swarm.core.preflight_review import review_agent_output, format_github_review_comments
 from swarm.core.design_policy import classify_3d_design_request
-from swarm.core.media_apps import list_media_apps, build_mockup_video_plan, build_voice_workflow_plan, build_3d_modeling_plan
+from swarm.core.media_apps import list_media_apps, build_mockup_video_plan, build_voice_workflow_plan, build_3d_modeling_plan, build_animation_plan
 from swarm.core.skill_runtime import plan_required_skills
 from swarm.core.environment_support import discover_environment_support
+from swarm.core.vision_bridge import plan_temporary_vision
+from swarm.core.workflow_plans import (
+    build_app_builder_plan,
+    build_app_tester_plan,
+    build_backend_maker_plan,
+    build_building_design_plan,
+    build_job_finder_applier_plan,
+    build_web_scraper_plan,
+)
 
 
 class ToolRegistry:
@@ -161,6 +170,7 @@ class ToolRegistry:
         registry._register_browser_tools()
         registry._register_preflight_review_tools()
         registry._register_media_app_tools()
+        registry._register_workflow_planner_tools()
         registry._register_environment_tools()
         registry._register_knowledge_app_tools()
         registry._register_context_docs_mcp_tools()
@@ -408,6 +418,20 @@ class ToolRegistry:
             },
         ))
         self.register(Tool(
+            name="plan_animation",
+            description="Plan 2D, 3D, UI, product, logo, character, mockup, or video animation with storyboard, timing, keyframes, render preview, and export QA.",
+            func=lambda prompt, app="auto", style="auto": json.dumps(build_animation_plan(prompt, app, style), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string"},
+                    "app": {"type": "string"},
+                    "style": {"type": "string"},
+                },
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
             name="plan_3d_design_model",
             description="Plan a 3D model from a user-owned design, sketch, building, product, CAD note, or original character reference. Allows faithful user-owned designs and only redirects exact third-party clones to original variants.",
             func=lambda prompt, app="Blender": json.dumps(build_3d_modeling_plan(prompt, app), indent=2),
@@ -441,6 +465,92 @@ class ToolRegistry:
                     "mode": {"type": "string", "enum": ["speech_to_text", "text_to_speech", "tts", "voice_generation"]},
                     "provider": {"type": "string"},
                 },
+                "required": ["prompt"],
+            },
+        ))
+
+    def _register_workflow_planner_tools(self):
+        self.register(Tool(
+            name="plan_temporary_vision",
+            description="Let any non-vision agent get a one-time detailed image/video/design/layout/animation brief from a vision model, or ask detailed questions only in plan mode when no vision model exists.",
+            func=lambda agent_name, agent_model, task, asset_type="image_or_video", mode="build", available_vision_models="": json.dumps(
+                plan_temporary_vision(agent_name, agent_model, task, asset_type, mode, available_vision_models),
+                indent=2,
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "agent_name": {"type": "string"},
+                    "agent_model": {"type": "string"},
+                    "task": {"type": "string"},
+                    "asset_type": {"type": "string"},
+                    "mode": {"type": "string", "enum": ["plan", "build", "normal"]},
+                    "available_vision_models": {"type": "string", "description": "Comma-separated or JSON list of vision-capable model refs"},
+                },
+                "required": ["agent_name", "agent_model", "task"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_web_scraper",
+            description="Plan a compliant web scraper with browser/API fallback, extraction fields, rate limits, source tracking, and export strategy.",
+            func=lambda target, goal="extract useful data": json.dumps(build_web_scraper_plan(target, goal), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"target": {"type": "string"}, "goal": {"type": "string"}},
+                "required": ["target"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_job_finder_applier",
+            description="Plan job search, fit scoring, tailored application drafts, and user-approved job application submission.",
+            func=lambda query, profile_summary="", mode="find": json.dumps(build_job_finder_applier_plan(query, profile_summary, mode), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "profile_summary": {"type": "string"},
+                    "mode": {"type": "string", "enum": ["find", "apply", "find_and_apply"]},
+                },
+                "required": ["query"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_building_design",
+            description="Plan building interior and exterior design with facade, room layout, lighting, materials, circulation, and 3D handoff.",
+            func=lambda prompt, scope="interior_and_exterior": json.dumps(build_building_design_plan(prompt, scope), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"prompt": {"type": "string"}, "scope": {"type": "string"}},
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_app_tester",
+            description="Plan full app testing across unit, integration, browser, accessibility, responsive, performance, and security-smoke checks.",
+            func=lambda app, focus="full QA": json.dumps(build_app_tester_plan(app, focus), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"app": {"type": "string"}, "focus": {"type": "string"}},
+                "required": ["app"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_app_builder",
+            description="Plan app building from requirements through frontend, backend, tests, integration, docs, and master review.",
+            func=lambda prompt, stack="auto": json.dumps(build_app_builder_plan(prompt, stack), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"prompt": {"type": "string"}, "stack": {"type": "string"}},
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_backend_maker",
+            description="Plan backend/API creation with schemas, auth, validation, permissions, tests, docs, and security guardrails.",
+            func=lambda prompt, framework="auto": json.dumps(build_backend_maker_plan(prompt, framework), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"prompt": {"type": "string"}, "framework": {"type": "string"}},
                 "required": ["prompt"],
             },
         ))
