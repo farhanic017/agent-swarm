@@ -63,6 +63,7 @@ def test_feature_benchmark_covers_swarm_capabilities(tmp_path):
         "always_on_council_voting",
         "ab_testing_winner_and_alternative",
         "hermes_self_evolution_skill_creation",
+        "advanced_capabilities_and_auto_learner",
         "real_time_dashboard_export",
     }
 

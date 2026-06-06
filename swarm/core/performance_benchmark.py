@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,6 +12,7 @@ from typing import Iterable
 from swarm.agents.catalog import create_specialist_agents
 from swarm.config import SwarmConfig
 from swarm.core.ab_testing import run_ab_test
+from swarm.core.advanced_capabilities import build_auto_learner_profile, list_advanced_capabilities, plan_advanced_capability
 from swarm.core.context import build_compaction_summary
 from swarm.core.council import run_council_vote
 from swarm.core.dashboard import write_dashboard
@@ -265,8 +267,10 @@ def run_feature_benchmark(config: SwarmConfig, output_dir: str | Path = "example
             agent_name="hermes",
         )
         validation = validate_hermes_skill(proposal["draft"])
-        saved = persist_hermes_skill(proposal["draft"], output_root / "hermes_evolved_skills")
-        listed = list_hermes_skills(output_root / "hermes_evolved_skills")
+        with tempfile.TemporaryDirectory() as temp_root:
+            skill_root = Path(temp_root) / "hermes_evolved_skills"
+            saved = persist_hermes_skill(proposal["draft"], skill_root)
+            listed = list_hermes_skills(skill_root)
         return {
             "proposal_valid": proposal["validation"]["ok"],
             "validation_ok": validation["ok"],
@@ -286,6 +290,21 @@ def run_feature_benchmark(config: SwarmConfig, output_dir: str | Path = "example
         return {"first_full": "FULL_CONTEXT_ONCE" in first, "second_remembered": "REMEMBERED" in second}
 
     record("replacement_model_memory", switch_memory_feature)
+
+    def advanced_capabilities_feature():
+        capabilities = list_advanced_capabilities()
+        auto_learner = build_auto_learner_profile("aggressive tests, graph demos, README updates, low token cost")
+        security_plan = plan_advanced_capability("scan agent outputs for hardcoded credentials", "secret_scanner")
+        categories = {item["category"] for item in capabilities}
+        return {
+            "capabilities": len(capabilities),
+            "categories": sorted(categories),
+            "has_auto_learner": any(item["key"] == "preference_memory" for item in capabilities),
+            "auto_learner_confidence": auto_learner["confidence"],
+            "security_primary_agent": security_plan["primary_agent"],
+        }
+
+    record("advanced_capabilities_and_auto_learner", advanced_capabilities_feature)
 
     def master_review_feature():
         state = SharedState(user_input="benchmark every feature")
@@ -493,6 +512,8 @@ def _score_feature_result(feature: str, value) -> int:
         return 100 if value.get("graph_nodes", 0) >= 4 and value.get("vault_notes", 0) >= 3 and value.get("note_has_wikilink") else 50
     if feature == "hermes_self_evolution_skill_creation":
         return 100 if value.get("proposal_valid") and value.get("validation_ok") and value.get("saved") and value.get("listed", 0) >= 1 else 50
+    if feature == "advanced_capabilities_and_auto_learner":
+        return 100 if value.get("capabilities", 0) >= 55 and value.get("has_auto_learner") and value.get("security_primary_agent") == "secret_scanner" else 50
     return 90 if value else 50
 
 

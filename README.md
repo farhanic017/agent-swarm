@@ -3,8 +3,8 @@
 [![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
-![version: v6](https://img.shields.io/badge/version-v6-2563eb)
-![tests: 298 passed](https://img.shields.io/badge/tests-298%20passed-16a34a)
+![version: v7](https://img.shields.io/badge/version-v7-2563eb)
+![tests: 304 passed](https://img.shields.io/badge/tests-304%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -107,8 +107,10 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 
 ## Expanded Swarm Features
 
-- **20+ built-in agents** across coding, business, and creative work: backend API, frontend UI, coding, security, testing, debugging, documentation, marketing, finance, analytics, trading, legal, UX research, localization, product management, sales, design, photo editing, video editing, Figma control, and council coordination.
+- **98 built-in agents** across core orchestration, memory, coding, business, creative, web, security, integrations, observability, and developer experience work.
 - **4 pillars** organize the swarm: `code`, `see`, `design`, and `act`.
+- **66 advanced capabilities** are available through the planner directory, covering checkpoint/resume, deterministic replay, cost estimation, parallel execution, priority queues, exponential backoff, conditional branching, reusable pipelines, vector memory, user-preference learning, semantic run search, diff-aware agents, test generation, migrations, dependency audits, refactor planning, CI/CD, model training, Codex caching, dynamic benchmarking, cost optimization, quantization, provider health monitoring, Playwright, form filling, site monitoring, API exploration, link validation, secret scanning, CVE monitoring, sandboxing, output diff review, permission escalation alerts, storyboards, brand consistency, i18n, music/audio, AR/VR, competitor analysis, SEO, analytics interpretation, email campaigns, invoices/contracts, pitch decks, GitHub Actions, webhooks, Slack/Discord, Notion, Linear/Jira, Supabase, Stripe, Docker, OpenTelemetry, cost dashboards, performance leaderboards, run diff viewer, anomaly detection, VS Code extension, swarm builder UI, agent marketplace, cloud deploy, TypeScript SDK, and REST API wrapper planning.
+- **Auto Learner Agent** learns project-scoped user patterns, choices, preferences, coding style, visual taste, README expectations, testing preferences, and cost/latency preferences with approval-aware durable memory rules.
 - **Agent Council System** automatically runs on every swarm request before agent work starts. It collects specialist reasoning, surfaces risks and conflicts, tallies proceed/reject votes, and returns a confidence score. `--council` is available when you want only the meeting and vote.
 - **Different model types per agent** are explicit in the catalog: coding, reasoning, chat, vision, best, and cheap model preferences route through the model switcher/fallback chain.
 - **OpenClaw support** detects `OPENCLAW_BASE_URL` or `OPENCLAW_ENDPOINT`, optional `OPENCLAW_API_KEY`, and `OPENCLAW_MODEL`, then routes OpenClaw as an OpenAI-compatible `agent_gateway`.
@@ -116,6 +118,7 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 - **ElevenLabs support** detects `ELEVENLABS_API_KEY`, `ELEVENLABS_STT_MODEL`, and `ELEVENLABS_TTS_MODEL`, then routes native speech-to-text and text-to-speech requests through the ElevenLabs adapter.
 - **Hermes support** recognizes Hermes/Nous model names as chat+reasoning capable options for writing, analytics, council, and planning work.
 - **Hermes self-evolution agent** turns repeated successful work into reusable skills. It observes completed tasks, proposes small scoped skills, validates safety/reuse gates, versions JSON manifests plus `SKILL.md`, lists approved evolved skills, and lets future swarm runs reuse them after master review.
+- **Advanced planner tools** expose `list_advanced_capabilities`, `plan_advanced_capability`, `plan_auto_learner_profile`, and `plan_swarm_pipeline` so the new capabilities can be selected, scoped, and validated before execution.
 - **Per-agent sub-agents** are built in. Each specialist has default helper roles and access to the `spawn_agent` tool for delegating focused work when needed.
 - **AI Reviewer Agent** reviews every individual agent output before integration for security vulnerabilities, performance issues, and logic errors. It produces GitHub PR inline comment payloads and routes fixes back to the responsible agent before the master connects the project parts.
 - **XSS validation** flags risky raw HTML rendering such as `dangerouslySetInnerHTML`, `innerHTML = userInput`, unescaped template HTML, and injected `<script>` blocks before frontend work is integrated.
@@ -431,7 +434,14 @@ agent-swarm/
 
 ## Version History
 
-### v6 (Current) - Hermes Self-Evolution & Skill Creation
+### v7 (Current) - Advanced Capability Agents & Auto Learner
+- Expanded the built-in catalog to 98 agents, adding specialist roles for orchestration, checkpoint/resume, replay, queues, pipelines, memory, knowledge graphs, semantic run search, Codex caching, test generation, migrations, dependency auditing, code explanation, refactoring, CI/CD, model training, cost optimization, provider health, Playwright, forms, monitoring, API exploration, secret scanning, sandboxing, storyboards, brand consistency, i18n, music/audio, AR/VR, competitor research, SEO, analytics interpretation, campaigns, contracts, pitch decks, GitHub Actions, webhooks, chatops, Notion, Linear/Jira, Supabase, Stripe, Docker, OpenTelemetry, cost dashboards, leaderboards, run diffs, anomaly detection, VS Code, swarm builder UI, marketplace, cloud deploy, TypeScript SDK, REST API, and auto learning.
+- Added 66 advanced capability definitions with deterministic planning, suggested agents, expected outputs, approval gates, and guardrails.
+- Added Auto Learner planning for project-scoped user patterns, choices, coding style, visual taste, testing expectations, README preferences, and low-cost/low-lag workflow preferences without silently writing durable user memory.
+- Added advanced planner registry tools: `list_advanced_capabilities`, `plan_advanced_capability`, `plan_auto_learner_profile`, and `plan_swarm_pipeline`.
+- Added benchmark coverage for advanced capabilities and auto learner planning, raising regression coverage to 304 passing tests.
+
+### v6 - Hermes Self-Evolution & Skill Creation
 - Added a dedicated Hermes self-evolution agent that can observe repeated work, propose reusable skills, validate them, persist versioned manifests, and expose evolved skills for future swarm runs.
 - Added Hermes evolution tools: `plan_hermes_evolution`, `propose_hermes_skill`, `validate_hermes_skill`, `persist_hermes_skill`, and `list_hermes_skills`.
 - Added guardrails so evolved skills stay small, scoped, reviewed, credential-safe, and versioned before reuse.

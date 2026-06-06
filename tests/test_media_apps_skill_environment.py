@@ -111,6 +111,10 @@ def test_default_tool_registry_exposes_new_support_tools():
     assert "validate_hermes_skill" in tools
     assert "persist_hermes_skill" in tools
     assert "list_hermes_skills" in tools
+    assert "list_advanced_capabilities" in tools
+    assert "plan_advanced_capability" in tools
+    assert "plan_auto_learner_profile" in tools
+    assert "plan_swarm_pipeline" in tools
 
 
 def test_user_owned_designs_are_allowed_for_direct_3d_modeling():

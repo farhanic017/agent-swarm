@@ -13,6 +13,12 @@ from swarm.core.brainstorm import BrainstormEngine
 from swarm.core.debug_collab import DebugCollaboration
 from swarm.core.learning import LessonLearner
 from swarm.core.context import build_compaction_summary, format_compaction_summary
+from swarm.core.advanced_capabilities import (
+    build_auto_learner_profile,
+    build_swarm_pipeline,
+    list_advanced_capabilities,
+    plan_advanced_capability,
+)
 from swarm.core.docs_integration import plan_docs_for_task
 from swarm.core.file_access import describe_file_access_policy, secure_list_directory, secure_read_file, secure_write_file
 from swarm.core.graphify import build_graphify_payload, build_graphify_project_map, export_graphify_payload
@@ -179,6 +185,7 @@ class ToolRegistry:
         registry._register_media_app_tools()
         registry._register_workflow_planner_tools()
         registry._register_hermes_evolution_tools()
+        registry._register_advanced_capability_tools()
         registry._register_environment_tools()
         registry._register_knowledge_app_tools()
         registry._register_context_docs_mcp_tools()
@@ -629,6 +636,58 @@ class ToolRegistry:
                 "type": "object",
                 "properties": {"root": {"type": "string"}},
                 "required": [],
+            },
+        ))
+
+    def _register_advanced_capability_tools(self):
+        self.register(Tool(
+            name="list_advanced_capabilities",
+            description="List advanced Agent Swarm capabilities across orchestration, memory, dev, model/provider, browser/web, security, creative, business, integrations, observability, and developer experience.",
+            func=lambda category=None: json.dumps(list_advanced_capabilities(category), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"category": {"type": "string"}},
+                "required": [],
+            },
+        ))
+        self.register(Tool(
+            name="plan_advanced_capability",
+            description="Create a scoped implementation or run plan for an advanced Agent Swarm capability.",
+            func=lambda task, capability="auto": json.dumps(plan_advanced_capability(task, capability), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string"},
+                    "capability": {"type": "string"},
+                },
+                "required": ["task"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_auto_learner_profile",
+            description="Infer project-scoped user preferences, coding style, visual taste, and workflow patterns from provided events without storing durable user memory unless approved.",
+            func=lambda events, scope="project": json.dumps(build_auto_learner_profile(events, scope), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "events": {"type": "string"},
+                    "scope": {"type": "string"},
+                },
+                "required": ["events"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_swarm_pipeline",
+            description="Build a named reusable swarm pipeline from a comma-separated agent chain and goal.",
+            func=lambda name, agents, goal: json.dumps(build_swarm_pipeline(name, agents, goal), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "agents": {"type": "string"},
+                    "goal": {"type": "string"},
+                },
+                "required": ["name", "agents", "goal"],
             },
         ))
 

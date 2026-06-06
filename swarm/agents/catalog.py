@@ -56,6 +56,13 @@ HERMES_EVOLUTION_TOOLS = (
     "list_hermes_skills",
 )
 
+ADVANCED_CAPABILITY_TOOLS = (
+    "list_advanced_capabilities",
+    "plan_advanced_capability",
+    "plan_auto_learner_profile",
+    "plan_swarm_pipeline",
+)
+
 DESIGN_3D_TOOLS = (
     "plan_3d_design_model",
     "classify_3d_design_request",
@@ -173,6 +180,87 @@ AGENT_SUB_AGENT_ROLES = {
 }
 
 
+def _advanced_agent_specs() -> tuple[AgentSpec, ...]:
+    tools = ADVANCED_CAPABILITY_TOOLS + COMMON_COLLAB_TOOLS
+    data = (
+        ("checkpoint_manager", "Checkpoint / Resume Agent", "act", "core", "Creates checkpoints and resumes crashed or interrupted swarm runs from the last completed agent.", ("checkpointing", "resume cursors", "run recovery"), "reasoning"),
+        ("replay_runner", "Swarm Replay Agent", "act", "core", "Records and replays swarm runs deterministically for debugging, audits, and reproducible demos.", ("run recording", "deterministic replay", "debug evidence"), "reasoning"),
+        ("priority_scheduler", "Priority Queue Agent", "act", "core", "Schedules urgent tasks, parallel groups, retries, and dependency-aware agent execution.", ("priority queue", "parallel execution", "exponential backoff"), "reasoning"),
+        ("pipeline_manager", "Swarm Pipeline Agent", "act", "core", "Saves and reuses named workflows made from common agent chains.", ("named pipelines", "workflow reuse", "conditional branching"), "reasoning"),
+        ("vector_memory", "Vector Memory Agent", "see", "core", "Plans persistent factual project memory and semantic retrieval across runs.", ("vector memory", "semantic retrieval", "project facts"), "reasoning"),
+        ("auto_learner", "Auto Learner Agent", "act", "core", "Learns project-scoped user patterns, choices, preferences, taste, visual style, and workflow habits with approval-aware memory rules.", ("preference learning", "taste modeling", "pattern detection"), "reasoning"),
+        ("knowledge_graph", "Knowledge Graph Agent", "see", "core", "Builds relationships between files, functions, agents, decisions, docs, and artifacts.", ("knowledge graphs", "architecture relationships", "decision maps"), "reasoning"),
+        ("semantic_run_search", "Semantic Run Search Agent", "see", "core", "Finds previous swarm runs by meaning, evidence, and remembered project decisions.", ("past run search", "semantic recall", "evidence retrieval"), "reasoning"),
+        ("codex_cache", "Codex Cache Agent", "act", "core", "Caches stable Codex context, plans, and summaries to avoid repeated token spend.", ("context caching", "cache invalidation", "token reduction"), "reasoning"),
+        ("test_generator", "Dedicated Test Generator Agent", "code", "coding", "Generates pytest, Jest, Vitest, browser, and regression tests as first-class deliverables.", ("test generation", "fixtures", "coverage gaps"), "coding"),
+        ("migration_agent", "Migration Agent", "code", "coding", "Plans database schema migrations, API version upgrades, and framework migrations.", ("database migrations", "API upgrades", "rollback plans"), "coding"),
+        ("dependency_auditor", "Dependency Auditor Agent", "code", "coding", "Audits outdated packages, CVEs, transitive dependency risks, and license conflicts.", ("dependency audit", "CVE checks", "license review"), "coding"),
+        ("code_explainer", "Code Explainer Agent", "code", "coding", "Generates inline comments, explanations, and architecture walkthroughs for complex code.", ("code explanation", "inline comments", "architecture notes"), "chat"),
+        ("refactor_planner", "Refactor Planner Agent", "code", "coding", "Identifies tech debt and plans incremental cleanup with tests and risk controls.", ("tech debt", "incremental refactors", "risk controls"), "coding"),
+        ("ci_cd_generator", "CI/CD Pipeline Generator Agent", "code", "coding", "Plans GitHub Actions, Vercel, Railway, Docker, and release pipelines.", ("CI/CD", "release gates", "deployment configs"), "coding"),
+        ("dynamic_benchmark", "Dynamic Model Benchmark Agent", "see", "core", "Benchmarks models against real user tasks and updates model routing evidence.", ("model benchmarks", "task scoring", "routing evidence"), "reasoning"),
+        ("model_trainer", "Model Trainer Integration Agent", "act", "core", "Collects preference data and plans LoRA fine-tunes or local adapter injection.", ("preference data", "LoRA planning", "adapter injection"), "reasoning"),
+        ("cost_optimizer", "Model Cost Optimizer Agent", "act", "core", "Chooses the cheapest capable model for each agent while respecting quality and modality needs.", ("cost optimization", "model routing", "budget control"), "reasoning"),
+        ("quantization_planner", "Quantization Planner Agent", "act", "core", "Recommends Q4/Q8 local model settings based on RAM, CPU, GPU, and context needs.", ("quantization", "local model sizing", "RAM estimates"), "reasoning"),
+        ("provider_health_monitor", "Provider Health Monitor Agent", "see", "core", "Detects provider rate limits, outages, latency spikes, and fallback triggers.", ("provider health", "latency tracking", "outage detection"), "reasoning"),
+        ("playwright_controller", "Playwright Browser Agent", "code", "coding", "Plans full Playwright browser automation with selectors, assertions, and screenshots.", ("Playwright", "browser tests", "UI automation"), "coding"),
+        ("form_filler", "Form Filler Agent", "act", "business", "Fills and submits web forms with approval gates, field evidence, and browser validation.", ("form filling", "submission approvals", "field mapping"), "reasoning"),
+        ("site_monitor", "Site Monitor Agent", "see", "business", "Watches URLs for changes and triggers swarm tasks on configured signals.", ("URL monitoring", "change detection", "trigger rules"), "reasoning"),
+        ("api_explorer", "API Explorer Agent", "see", "coding", "Discovers and documents REST or GraphQL endpoints from traffic, docs, and code.", ("REST discovery", "GraphQL discovery", "OpenAPI notes"), "coding"),
+        ("link_validator", "Link Validator Agent", "see", "coding", "Crawls project sites and docs to detect broken links, redirects, and 404s.", ("link crawling", "404 detection", "redirect review"), "coding"),
+        ("secret_scanner", "Secret Scanner Agent", "code", "coding", "Scans agent outputs and changed files for hardcoded credentials before saving or committing.", ("secret scanning", "credential blocking", "safe output gates"), "coding"),
+        ("cve_monitor", "Dependency CVE Monitor Agent", "see", "coding", "Monitors dependency vulnerability disclosures and plans upgrades.", ("CVE monitoring", "dependency risk", "upgrade plans"), "reasoning"),
+        ("sandbox_manager", "Agent Sandboxing Agent", "act", "core", "Plans isolated runtimes, container boundaries, and restricted tool execution for agents.", ("sandboxing", "container isolation", "tool restrictions"), "reasoning"),
+        ("diff_reviewer", "Output Diff Review Agent", "code", "coding", "Reviews file diffs after swarm runs and highlights exactly what changed.", ("diff review", "changed-file summaries", "risk flags"), "coding"),
+        ("permission_escalation_monitor", "Permission Escalation Monitor", "act", "core", "Warns when agents attempt access outside declared file, tool, API, or approval scopes.", ("permission alerts", "scope enforcement", "approval escalation"), "reasoning"),
+        ("storyboard", "Storyboard Agent", "design", "creative", "Plans visual narratives before video, animation, game, product, or mockup generation.", ("storyboards", "shot lists", "scene timing"), "video_generation"),
+        ("brand_consistency", "Brand Consistency Agent", "design", "creative", "Checks designs, copy, and media against brand guidelines and visual/tone rules.", ("brand QA", "style compliance", "visual consistency"), "vision"),
+        ("i18n_pipeline", "Multi-Language Localization Pipeline Agent", "design", "business", "Coordinates full i18n workflows across content, UI, formatting, and translation QA.", ("i18n", "translation QA", "locale workflows"), "chat"),
+        ("music_audio", "Music & Audio Planning Agent", "design", "creative", "Plans soundtracks, SFX, voice, captions, and audio export QA for media workflows.", ("music planning", "SFX", "audio QA"), "text_to_speech"),
+        ("ar_vr_planner", "AR/VR Scene Planner Agent", "design", "creative", "Plans immersive spatial scenes, interaction zones, assets, and comfort constraints.", ("AR", "VR", "spatial design"), "vision"),
+        ("competitor_analysis", "Competitor Analysis Agent", "act", "business", "Scrapes, compares, and summarizes competitor products, positioning, and feature gaps.", ("competitor research", "gap analysis", "positioning"), "reasoning"),
+        ("seo_audit", "SEO Audit Agent", "see", "business", "Audits technical SEO, meta tags, structured data, crawlability, and content gaps.", ("technical SEO", "structured data", "crawl checks"), "reasoning"),
+        ("analytics_interpreter", "Analytics Interpreter Agent", "see", "business", "Reads analytics exports and generates funnel, product, campaign, and growth insights.", ("GA4", "Mixpanel", "insight generation"), "reasoning"),
+        ("email_campaign", "Email Campaign Planner Agent", "act", "business", "Creates drip sequences, segmentation, subject lines, and A/B campaign plans.", ("email campaigns", "drip sequences", "A/B tests"), "chat"),
+        ("invoice_contract", "Invoice & Contract Generator Agent", "act", "business", "Drafts invoices, contracts, and clause templates with legal review gates.", ("invoices", "contracts", "clause templates"), "reasoning"),
+        ("pitch_deck", "Pitch Deck Agent", "design", "business", "Creates investor deck outlines, data needs, slide narratives, and speaker notes.", ("pitch decks", "investor story", "slide outlines"), "chat"),
+        ("github_actions_runner", "GitHub Actions Runner Agent", "act", "coding", "Plans PR-triggered swarm checks and council review comments through GitHub Actions.", ("GitHub Actions", "PR comments", "status checks"), "coding"),
+        ("webhook_listener", "Webhook Listener Agent", "act", "coding", "Plans secure webhook routes that let external services trigger scoped swarm tasks.", ("webhooks", "event schemas", "auth checks"), "coding"),
+        ("chatops_bot", "Slack / Discord Bot Agent", "act", "business", "Plans chat commands that run swarm tasks and post summarized results to Slack or Discord.", ("Slack bot", "Discord bot", "chat commands"), "chat"),
+        ("notion_sync", "Notion Sync Agent", "act", "business", "Plans pushing swarm outputs, decisions, and docs to Notion pages or databases.", ("Notion sync", "page schemas", "decision logs"), "chat"),
+        ("issue_tracker", "Linear / Jira Integration Agent", "act", "business", "Creates tickets from triage and updates Linear or Jira as swarm work progresses.", ("Linear", "Jira", "ticket automation"), "reasoning"),
+        ("supabase_agent", "Supabase Agent", "code", "coding", "Plans Supabase schemas, RLS policies, auth, storage, edge functions, and migrations.", ("Supabase", "RLS", "edge functions"), "coding"),
+        ("stripe_agent", "Stripe Integration Agent", "code", "coding", "Plans Stripe checkout, billing, payment flows, webhooks, and test matrices.", ("Stripe", "payments", "webhooks"), "coding"),
+        ("docker_agent", "Docker Agent", "code", "coding", "Generates Dockerfile, compose, image hardening, and container optimization plans.", ("Dockerfile", "compose", "containers"), "coding"),
+        ("telemetry_tracer", "OpenTelemetry Tracing Agent", "see", "core", "Plans agent-turn spans and OTLP export to Grafana, Jaeger, or compatible collectors.", ("OpenTelemetry", "trace spans", "OTLP"), "reasoning"),
+        ("cost_dashboard", "Real-Time Cost Dashboard Agent", "see", "core", "Tracks live token spend, provider latency, and cost per agent per run.", ("cost dashboard", "token spend", "budget alerts"), "reasoning"),
+        ("performance_leaderboard", "Agent Performance Leaderboard Agent", "see", "core", "Ranks agents by speed, success rate, quality, retry rate, and cost.", ("leaderboards", "agent metrics", "baseline scores"), "reasoning"),
+        ("run_diff_viewer", "Run Diff Viewer Agent", "see", "core", "Compares two swarm runs side by side across agents, decisions, costs, and outputs.", ("run comparison", "decision diffs", "cost deltas"), "reasoning"),
+        ("anomaly_detector", "Anomaly Detector Agent", "see", "core", "Flags unusual agent behavior against baseline token, latency, tool, and output patterns.", ("anomaly detection", "baseline deltas", "alerts"), "reasoning"),
+        ("vscode_extension", "VS Code Extension Agent", "code", "coding", "Plans VS Code sidebar commands, run controls, status views, and editor workflows.", ("VS Code extension", "sidebar commands", "editor UX"), "coding"),
+        ("swarm_builder_ui", "Interactive Swarm Builder UI Agent", "design", "creative", "Plans drag-and-drop agent chains and visual workflow editing.", ("builder UI", "drag and drop", "workflow graph"), "chat"),
+        ("agent_marketplace", "Agent Marketplace Agent", "act", "business", "Plans community custom agents, manifests, ratings, moderation, and install flow.", ("agent marketplace", "ratings", "install manifests"), "reasoning"),
+        ("cloud_deploy", "One-Command Cloud Deploy Agent", "act", "coding", "Plans hosted API deployment for Agent Swarm with auth, workers, and observability.", ("cloud deploy", "hosted API", "rollback"), "coding"),
+        ("typescript_sdk", "TypeScript SDK Agent", "code", "coding", "Plans a JS/TS SDK for using Agent Swarm without Python.", ("TypeScript SDK", "client types", "examples"), "coding"),
+        ("rest_api_wrapper", "REST API Wrapper Agent", "code", "coding", "Plans HTTP endpoints, request schemas, auth, and external tool access for Agent Swarm.", ("REST API", "HTTP routes", "auth boundaries"), "coding"),
+    )
+    return tuple(
+        AgentSpec(
+            name,
+            title,
+            pillar,
+            category,
+            description,
+            capabilities,
+            tools,
+            0.22,
+            model_preference,
+            model_preference,
+        )
+        for name, title, pillar, category, description, capabilities, model_preference in data
+    )
+
+
 AGENT_SPECS: tuple[AgentSpec, ...] = (
     AgentSpec("triage", "Triage Agent", "act", "core", "Routes work to the best specialist.", ("classify requests", "split tasks", "handoff"), COMMON_COLLAB_TOOLS, 0.2),
     AgentSpec("hermes", "Hermes Self-Evolution Agent", "act", "core", "Observes repeated work patterns, creates reusable skills, validates them, versions them, and feeds approved skills back into future swarm runs.", ("self evolution", "skill creation", "skill validation", "versioned memory", "reuse planning"), HERMES_EVOLUTION_TOOLS + COMMON_COLLAB_TOOLS, 0.18, "reasoning"),
@@ -211,6 +299,7 @@ AGENT_SPECS: tuple[AgentSpec, ...] = (
     AgentSpec("voice_transcriber", "Voice-to-Text Agent", "see", "creative", "Plans and runs speech-to-text transcription, diarization handoff, subtitle drafts, and transcript cleanup.", ("speech to text", "audio transcription", "subtitle draft", "speaker note cleanup"), COMMON_COLLAB_TOOLS, 0.2, "speech_to_text"),
     AgentSpec("voice_generator", "Voice Generation Agent", "design", "creative", "Plans and runs text-to-speech voiceovers, narration drafts, voice style prompts, and audio export QA.", ("text to speech", "voiceover generation", "narration", "audio export QA"), COMMON_COLLAB_TOOLS, 0.25, "text_to_speech"),
     AgentSpec("figma_controller", "Figma Control Agent", "design", "creative", "Coordinates Figma-oriented layout, component, and handoff changes.", ("component control", "design QA", "handoff specs", "browser prototype checks"), BROWSER_TOOLS + COMMON_COLLAB_TOOLS, 0.25, "vision"),
+    *_advanced_agent_specs(),
     AgentSpec("council_master", "Council Master", "act", "core", "Runs evidence review, debate, voting, and final confidence scoring.", ("debate moderation", "vote tallying", "confidence scoring"), COMMON_COLLAB_TOOLS, 0.1, "reasoning"),
 )
 

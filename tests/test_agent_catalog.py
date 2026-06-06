@@ -43,6 +43,12 @@ def test_requested_business_and_creative_agents_exist():
         "app_builder",
         "backend_maker",
         "hermes",
+        "auto_learner",
+        "test_generator",
+        "secret_scanner",
+        "playwright_controller",
+        "provider_health_monitor",
+        "rest_api_wrapper",
     }
     assert required.issubset(agents)
     assert agents["photo_editor"].task_type == "image_generation"
@@ -70,6 +76,8 @@ def test_requested_business_and_creative_agents_exist():
     assert "plan_hermes_evolution" in agents["hermes"].tools
     assert "propose_hermes_skill" in agents["hermes"].tools
     assert "persist_hermes_skill" in agents["hermes"].tools
+    assert "plan_auto_learner_profile" in agents["auto_learner"].tools
+    assert "plan_advanced_capability" in agents["test_generator"].tools
 
 
 def test_agents_have_model_preferences_and_sub_agent_roles():
@@ -83,6 +91,8 @@ def test_agents_have_model_preferences_and_sub_agent_roles():
     assert agents["animator"].model_preference == "video_generation"
     assert agents["app_builder"].model_preference == "coding"
     assert agents["hermes"].model_preference == "reasoning"
+    assert agents["auto_learner"].model_preference == "reasoning"
+    assert agents["provider_health_monitor"].model_preference == "reasoning"
     assert agents["council_master"].model_preference == "reasoning"
     assert "testing" in agents["hermes"].sub_agent_roles
     assert "testing" in agents["coder"].sub_agent_roles
