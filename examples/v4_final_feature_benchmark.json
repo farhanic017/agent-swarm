@@ -28,7 +28,7 @@
     {
       "feature": "smart_ai_selection_hybrid_routing",
       "ok": true,
-      "elapsed_seconds": 0.0173,
+      "elapsed_seconds": 0.0172,
       "score": 100,
       "details": {
         "assignments": 90,
@@ -264,7 +264,7 @@
     {
       "feature": "real_time_dashboard_export",
       "ok": true,
-      "elapsed_seconds": 0.0018,
+      "elapsed_seconds": 0.0017,
       "score": 100,
       "details": {
         "path": "examples\\feature_benchmark_dashboard.html",

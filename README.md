@@ -4,7 +4,7 @@
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
 ![version: v4](https://img.shields.io/badge/version-v4-2563eb)
-![tests: 274 passed](https://img.shields.io/badge/tests-274%20passed-16a34a)
+![tests: 275 passed](https://img.shields.io/badge/tests-275%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -425,6 +425,7 @@ agent-swarm/
 - Added MCP marketplace directory and task-scoped connector planning across dev, productivity, design, CRM, finance, commerce, marketing, legal, research, healthcare, travel, music, and specialized tools.
 - Added backend API, frontend UI, and documentation agents for common multi-agent work splits.
 - Added expanded media model/app detection for Kling AI, Imagine, Seedance/Sedance, Highfield, and Nano Banana.
+- Added same-session CLI discovery for uv-installed Aider, winget-installed Mistral Vibe, and user-installed Windsurf.
 
 ### v3 - Preflight AI Review, Skills, Apps & Local Runtime Support
 - Added dedicated `ai_reviewer` agent for per-agent security, performance, and logic review before integration.

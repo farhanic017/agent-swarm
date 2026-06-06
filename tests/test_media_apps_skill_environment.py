@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from swarm.core import environment_support
 from swarm.core.environment_support import discover_environment_support
 from swarm.core.media_apps import build_mockup_video_plan, build_voice_workflow_plan, list_media_apps
 from swarm.core.skill_runtime import create_temporary_skill_session, plan_required_skills
@@ -52,6 +53,26 @@ def test_required_skill_planner_and_environment_discovery_are_bounded():
 
     support = discover_environment_support()
     assert {"local_models", "cli_agents", "ide_agents", "mcp_servers"}.issubset(support)
+
+
+def test_environment_discovery_uses_cli_path_hints(tmp_path, monkeypatch):
+    monkeypatch.setattr(environment_support.Path, "home", lambda: tmp_path)
+    vibe = tmp_path / "AppData" / "Local" / "Microsoft" / "WinGet" / "Packages" / "MistralAI.MistralVibe.ACP_test"
+    windsurf = tmp_path / "AppData" / "Local" / "Programs" / "Windsurf" / "bin"
+    aider = tmp_path / ".local" / "bin"
+    vibe.mkdir(parents=True)
+    windsurf.mkdir(parents=True)
+    aider.mkdir(parents=True)
+    (vibe / "vibe-acp.exe").write_text("", encoding="utf-8")
+    (windsurf / "windsurf.cmd").write_text("", encoding="utf-8")
+    (aider / "aider.exe").write_text("", encoding="utf-8")
+
+    support = discover_environment_support()
+    clis = {item["name"]: item for item in support["cli_agents"]}
+
+    assert clis["mistral_vibe"]["available"]
+    assert clis["aider"]["available"]
+    assert clis["windsurf"]["available"]
 
 
 def test_default_tool_registry_exposes_new_support_tools():
