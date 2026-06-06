@@ -3,7 +3,7 @@
 [![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
-![version: v7](https://img.shields.io/badge/version-v7-2563eb)
+![version: v8](https://img.shields.io/badge/version-v8-2563eb)
 ![tests: 319 passed](https://img.shields.io/badge/tests-319%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
@@ -467,7 +467,7 @@ agent-swarm/
 
 ## Version History
 
-### v7 (Current) - Advanced Capability Agents & Auto Learner
+### v8 (Current) - Advanced Capability Agents & Auto Learner
 - Expanded the built-in catalog to 102 agents, adding specialist roles for orchestration, checkpoint/resume, replay, queues, pipelines, memory, hallucination recovery, knowledge graphs, semantic run search, Codex caching, test generation, migrations, dependency auditing, code explanation, refactoring, CI/CD, model training, cost optimization, provider health, Playwright, forms, monitoring, API exploration, secret scanning, sandboxing, storyboards, brand consistency, i18n, music/audio, AR/VR, game development, competitor research, SEO, analytics interpretation, campaigns, social posting/management, contracts, pitch decks, GitHub Actions, webhooks, n8n workflows, chatops, Notion, Linear/Jira, Supabase, Stripe, Docker, OpenTelemetry, cost dashboards, leaderboards, run diffs, anomaly detection, VS Code, swarm builder UI, marketplace, cloud deploy, TypeScript SDK, REST API, and auto learning.
 - Added 70 advanced capability definitions with deterministic planning, suggested agents, expected outputs, approval gates, and guardrails.
 - Added hallucination recovery, n8n workflow creator, game developer, and social media poster/manager planners with registry tools, specialist agents, sub-agent routing, and benchmark coverage.
