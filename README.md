@@ -4,7 +4,7 @@
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
 ![version: v7](https://img.shields.io/badge/version-v7-2563eb)
-![tests: 304 passed](https://img.shields.io/badge/tests-304%20passed-16a34a)
+![tests: 308 passed](https://img.shields.io/badge/tests-308%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -82,6 +82,9 @@ python -m swarm.core.performance_benchmark --features --skip-models --output exa
 
 # Benchmark features plus live Opus comparisons when provider credits/API access exist
 python -m swarm.core.performance_benchmark --features --models openrouter:anthropic/claude-opus-4.8 openrouter:anthropic/claude-opus-4.7 --max-tokens 260 --output examples/full_swarm_plus_opus_benchmark.json
+
+# Aggressive CLI/model benchmark: CLI probes, OpenCode multi-provider runs, single-model complex work, swarm comparison, and temporary vision routing
+python scripts/run_aggressive_cli_benchmark.py --output examples/aggressive_cli_swarm_benchmark.json --model-limit 5 --opencode-model-limit 3 --opencode-runs-per-model 2
 
 # Load custom agents
 python main.py --custom-agents examples/agents.json
@@ -439,7 +442,8 @@ agent-swarm/
 - Added 66 advanced capability definitions with deterministic planning, suggested agents, expected outputs, approval gates, and guardrails.
 - Added Auto Learner planning for project-scoped user patterns, choices, coding style, visual taste, testing expectations, README preferences, and low-cost/low-lag workflow preferences without silently writing durable user memory.
 - Added advanced planner registry tools: `list_advanced_capabilities`, `plan_advanced_capability`, `plan_auto_learner_profile`, and `plan_swarm_pipeline`.
-- Added benchmark coverage for advanced capabilities and auto learner planning, raising regression coverage to 304 passing tests.
+- Added temporary vision bridge coverage inside the 15-feature benchmark plus an aggressive CLI benchmark runner for OpenCode multi-provider tests, single-model complex work, swarm comparison, and CLI headless probes.
+- Raised regression coverage to 308 passing tests.
 
 ### v6 - Hermes Self-Evolution & Skill Creation
 - Added a dedicated Hermes self-evolution agent that can observe repeated work, propose reusable skills, validate them, persist versioned manifests, and expose evolved skills for future swarm runs.

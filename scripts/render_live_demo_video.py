@@ -423,7 +423,7 @@ def scene_finish(draw, local: int):
         ("pytest", "298 passed", GREEN),
         ("warnings", "298 passed", GREEN),
         ("compile", "clean", BLUE),
-        ("feature benchmark", "13/13 passed", PURPLE),
+        ("feature benchmark", "15/15 passed", PURPLE),
         ("OpenCode Qwen", "OK", AMBER),
         ("OpenCode Mistral", "OK", PINK),
     ]

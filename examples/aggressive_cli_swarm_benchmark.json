@@ -1,0 +1,745 @@
+{
+  "generated_at": "2026-06-06T16:54:14.565549+00:00",
+  "cwd": "C:\\Users\\Farhan\\Documents\\Codex\\2026-06-05\\files-mentioned-by-the-user-agent\\work\\agent-swarm-push",
+  "complex_work_prompt": "Complex benchmark work: design a secure multi-agent job finder and applier that scrapes listings, uses temporary vision for screenshots, routes coding/security/browser agents to the best providers, keeps token spend low, writes tests, and produces a CI-ready implementation plan. Include architecture, agent roles, security risks, test strategy, and rollback in 220 words or less.",
+  "cli_versions": {
+    "opencode": {
+      "command": [
+        "opencode",
+        "--version"
+      ],
+      "resolved_command": [
+        "D:\\open code\\npm-global\\opencode.CMD",
+        "--version"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 0.741,
+      "stdout": "1.16.0",
+      "stderr": "",
+      "returncode": 0
+    },
+    "codex": {
+      "command": [
+        "codex",
+        "--version"
+      ],
+      "resolved_command": [
+        "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.602.4764.0_x64__2p2nqsd0c76g0\\app\\resources\\codex.EXE",
+        "--version"
+      ],
+      "available": true,
+      "ok": false,
+      "elapsed_seconds": 0.011,
+      "stdout": "",
+      "stderr": "[WinError 5] Access is denied",
+      "returncode": "oserror"
+    },
+    "qwen": {
+      "command": [
+        "qwen",
+        "--version"
+      ],
+      "resolved_command": [
+        "D:\\open code\\npm-global\\qwen.CMD",
+        "--version"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 1.813,
+      "stdout": "0.17.1",
+      "stderr": "",
+      "returncode": 0
+    },
+    "gemini": {
+      "command": [
+        "gemini",
+        "--version"
+      ],
+      "resolved_command": [
+        "D:\\open code\\npm-global\\gemini.CMD",
+        "--version"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 2.005,
+      "stdout": "0.45.1",
+      "stderr": "",
+      "returncode": 0
+    },
+    "mistral_vibe_acp": {
+      "command": [
+        "vibe-acp",
+        "--version"
+      ],
+      "resolved_command": [
+        "C:\\Users\\Farhan\\AppData\\Local\\Microsoft\\WinGet\\Packages\\MistralAI.MistralVibe.ACP_Microsoft.Winget.Source_8wekyb3d8bbwe\\vibe-acp.EXE",
+        "--version"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 2.311,
+      "stdout": "vibe-acp.EXE 2.14.0",
+      "stderr": "",
+      "returncode": 0
+    },
+    "aider": {
+      "command": [
+        "aider",
+        "--version"
+      ],
+      "resolved_command": [
+        "C:\\Users\\Farhan\\.local\\bin\\aider.EXE",
+        "--version"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 1.326,
+      "stdout": "aider.EXE 0.86.2",
+      "stderr": "",
+      "returncode": 0
+    },
+    "windsurf": {
+      "command": [
+        "windsurf",
+        "--version"
+      ],
+      "resolved_command": [
+        "C:\\Users\\Farhan\\AppData\\Local\\Programs\\Windsurf\\bin\\windsurf.CMD",
+        "--version"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 0.286,
+      "stdout": "1.110.1\nc46c49e94b4d3f41181204d59809d8f1b2c48d68\nx64",
+      "stderr": "",
+      "returncode": 0
+    },
+    "claude": {
+      "command": [
+        "claude",
+        "--version"
+      ],
+      "resolved_command": [
+        "D:\\open code\\npm-global\\claude.CMD",
+        "--version"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 0.196,
+      "stdout": "2.1.142 (Claude Code)",
+      "stderr": "",
+      "returncode": 0
+    },
+    "cursor": {
+      "command": [
+        "cursor",
+        "--version"
+      ],
+      "resolved_command": [
+        "D:\\SOFTWARE\\cursor\\resources\\app\\bin\\cursor.CMD",
+        "--version"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 0.28,
+      "stdout": "3.5.33\naac81804b986d739acab348ed96b8bea6e83cc50\nx64",
+      "stderr": "",
+      "returncode": 0
+    }
+  },
+  "cli_headless": {
+    "qwen": {
+      "command": [
+        "qwen",
+        "--bare",
+        "--auth-type",
+        "openai"
+      ],
+      "resolved_command": [
+        "D:\\open code\\npm-global\\qwen.CMD",
+        "--bare",
+        "--auth-type",
+        "openai"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 26.399,
+      "stdout": "**Architecture**\n\n1. **Job\u2011Scout (Vision + Scraper agent)** \u2013 fetches listing pages, runs a lightweight CV\u2011model to detect non\u2011HTML content (screenshots, PDFs). Floors the results into a *JobFeed queue*.  \n2. **Route\u2011Planner (Logic agent)** \u2013 sits on the queue, evaluates providers by match score (skill tags, location, contract type) and current token quota. It forwards high\u2011scoring listings to the *Apply\u2011Cluster* while purging low\u2011scoring entries.  \n3. **Apply\u2011Cluster** \u2013 a pool of *Browser*, *Coding*, and *Security* subprocess agents.  \n   * **Browser\u2011Apply** executes form submissions, scrolling, and CSRF handling.  \n   * **Coding\u2011Apply** auto\u2011writes cover\u2011letters, resumes, or scripts, using our in\u2011house template library.  \n   * **Security\u2011Apply** reviews payloads for XSS/Injection vectors and sanitises user data.  \n4. **Token\u2011Monitor** tracks GPT\u2011API usage per provider; throttles or aborts if a threshold is reached.  \n5. **Audit\u2011Log** persists all actions in a shrink\u2011wrap JSON for traceability and rollback.  \n\n**Security risks & mitigations**\n\n* SS3\u2011Injection \u2013 **Security\u2011Apply** validates payloads; all network calls use HTTPS.  \n* Tal\u2011Leak \u2013 token usage is capped and logged; secrets are zero\u2011stored.  \n* Data\u2011Leak \u2013 logs are hashed and purged after 30\u202fdays; no personal info in public repos.  \n\n**Test Strategy**\n\n1. **Unit** \u2013 mock URL fetches; test *Route\u2011Planner* scoring log...[trimmed]",
+      "stderr": "'printf' is not recognized as an internal or external command,\noperable program or batch file.",
+      "returncode": 0
+    },
+    "aider": {
+      "command": [
+        "aider",
+        "--message",
+        "Answer directly without using tools. Complex benchmark work: design a secure multi-agent job finder and applier that scrapes listings, uses temporary vision for screenshots, routes coding/security/browser agents to the best providers, keeps token spend low, writes tests, and produces a CI-ready implementation plan. Include architecture, agent roles, security risks, test strategy, and rollback in 220 words or less.",
+        "--no-git"
+      ],
+      "resolved_command": [
+        "C:\\Users\\Farhan\\.local\\bin\\aider.EXE",
+        "--message",
+        "Answer directly without using tools. Complex benchmark work: design a secure multi-agent job finder and applier that scrapes listings, uses temporary vision for screenshots, routes coding/security/browser agents to the best providers, keeps token spend low, writes tests, and produces a CI-ready implementation plan. Include architecture, agent roles, security risks, test strategy, and rollback in 220 words or less.",
+        "--no-git"
+      ],
+      "available": true,
+      "ok": true,
+      "elapsed_seconds": 7.914,
+      "stdout": "Detected dumb terminal, disabling fancy input and pretty output.\n\nAider v0.86.2\nModel: mistral/mistral-small-latest with whole edit format, infinite output\nGit repo: none\nRepo-map: disabled\n\n### Secure Multi-Agent Job Finder & Applier Architecture\n\n\n\n**Core Components:**\n\n1. **Scraper Agent** (Python/Playwright) \u2013 Extracts listings from job boards \n(LinkedIn, Indeed) via headless browsers with rotating proxies/IPs.\n\n2. **Vision Agent** (Tesseract/OCR) \u2013 Takes temporary screenshots of \nCAPTCHAs/login pages, auto-solves via temporary vision APIs (e.g., 2Captcha), \nthen discards screenshots.\n\n3. **Router Agent** \u2013 Dynamically assigns tasks (coding tests, security scans, \nbrowser automation) to specialized sub-agents based on job requirements (e.g., \nPython roles \u2192 coding agent).\n\n4. **Cost Controller** \u2013 Tracks token/API spend; enforces rate limits (e.g., \n100 requests/day) and switches providers (e.g., Browserless \u2192 ScrapingBee) if \nthresholds breach.\n\n5. **Test Harness** \u2013 Unit tests (pytest) for agents, integration tests \n(Selenium) for browser flows, and load tests (Locust) for scalability.\n\n\n\n**Security Risks:**\n\n- **Data Leakage:** Scraped resumes/job details encrypted at rest (AES-256) and\nin transit (TLS 1.3).\n\n- **API Abuse:** Vision APIs rate-limited; temporary tokens (JWT) with 1-hour \nexpiry.\n\n- **Browser Fingerprinting:** Rotate user agents, canvas randomization, and ...[trimmed]",
+      "stderr": "",
+      "returncode": 0
+    },
+    "gemini": {
+      "command": [
+        "gemini",
+        "--prompt"
+      ],
+      "available": true,
+      "ok": false,
+      "skipped": true,
+      "elapsed_seconds": 0.0,
+      "stdout": "",
+      "stderr": "Skipped by default because Gemini CLI headless prompt hangs on this machine; version probe still verifies the CLI.",
+      "returncode": "skipped"
+    }
+  },
+  "temporary_vision": {
+    "configured_vision_model": "azure-openai:gpt-4.1",
+    "coding_model_requesting_help": "qwen/qwen3-coder",
+    "delegation": {
+      "agent_name": "backend_maker",
+      "agent_model": "qwen/qwen3-coder",
+      "task": "inspect the screenshot and extract every visible UI, layout, animation, and data requirement",
+      "asset_type": "image",
+      "mode": "build",
+      "agent_has_native_vision": false,
+      "available_vision_models": [
+        "azure-openai:gpt-4.1"
+      ],
+      "route": "delegate_to_temporary_vision_model",
+      "temporary_vision_model": "azure-openai:gpt-4.1",
+      "vision_brief_requirements": [
+        "objects, people, characters, products, and text",
+        "layout, spacing, alignment, hierarchy, and composition",
+        "colors, materials, lighting, shadows, camera angle, and style",
+        "UI states, controls, navigation, responsiveness, and accessibility hints",
+        "animation timing, motion paths, transitions, cuts, and scene changes",
+        "3D geometry, scale, silhouette, perspective, interior/exterior details, and missing angles",
+        "risks, ambiguities, edge cases, and what must be verified by the next agent"
+      ],
+      "handoff_policy": "Vision model returns a full structured visual brief once; the requesting agent continues from that brief without repeatedly rereading the media.",
+      "questions": [],
+      "question_policy": {
+        "plan_mode": "ask detailed visual/function questions only when no vision model can inspect needed media",
+        "build_or_normal_mode": "avoid extensive questioning; proceed with reasonable assumptions and ask only blocking questions",
+        "simple_tasks": "do not ask extensive questions for simple requests such as a basic coin or simple Blender primitive"
+      }
+    },
+    "plan_mode_no_vision": {
+      "agent_name": "building_designer",
+      "agent_model": "mistral-small",
+      "task": "plan a building interior and exterior from a missing reference image",
+      "asset_type": "image",
+      "mode": "plan",
+      "agent_has_native_vision": false,
+      "available_vision_models": [],
+      "route": "ask_user_extensive_visual_questions",
+      "temporary_vision_model": "",
+      "vision_brief_requirements": [
+        "objects, people, characters, products, and text",
+        "layout, spacing, alignment, hierarchy, and composition",
+        "colors, materials, lighting, shadows, camera angle, and style",
+        "UI states, controls, navigation, responsiveness, and accessibility hints",
+        "animation timing, motion paths, transitions, cuts, and scene changes",
+        "3D geometry, scale, silhouette, perspective, interior/exterior details, and missing angles",
+        "risks, ambiguities, edge cases, and what must be verified by the next agent"
+      ],
+      "handoff_policy": "Vision model returns a full structured visual brief once; the requesting agent continues from that brief without repeatedly rereading the media.",
+      "questions": [
+        "What exact visual style should the final result follow?",
+        "What are the main objects, layout, proportions, colors, and materials?",
+        "What should be visible from the front, back, sides, top, and close-up views?",
+        "What text, branding, icons, UI controls, or labels must be preserved?",
+        "What animations, transitions, timing, camera moves, or interactions are required?",
+        "What functions or user flows are tied to the visual design?",
+        "What details are forbidden, optional, or lower priority?",
+        "What dimensions, room list, floor count, site constraints, and entrance direction should be used?",
+        "What interior finishes, furniture, lighting, facade materials, landscape, and circulation style do you want?"
+      ],
+      "question_policy": {
+        "plan_mode": "ask detailed visual/function questions only when no vision model can inspect needed media",
+        "build_or_normal_mode": "avoid extensive questioning; proceed with reasonable assumptions and ask only blocking questions",
+        "simple_tasks": "do not ask extensive questions for simple requests such as a basic coin or simple Blender primitive"
+      }
+    },
+    "build_mode_no_vision": {
+      "agent_name": "building_designer",
+      "agent_model": "mistral-small",
+      "task": "plan a building interior and exterior from a missing reference image",
+      "asset_type": "image",
+      "mode": "build",
+      "agent_has_native_vision": false,
+      "available_vision_models": [],
+      "route": "continue_without_annoying_user",
+      "temporary_vision_model": "",
+      "vision_brief_requirements": [
+        "objects, people, characters, products, and text",
+        "layout, spacing, alignment, hierarchy, and composition",
+        "colors, materials, lighting, shadows, camera angle, and style",
+        "UI states, controls, navigation, responsiveness, and accessibility hints",
+        "animation timing, motion paths, transitions, cuts, and scene changes",
+        "3D geometry, scale, silhouette, perspective, interior/exterior details, and missing angles",
+        "risks, ambiguities, edge cases, and what must be verified by the next agent"
+      ],
+      "handoff_policy": "Vision model returns a full structured visual brief once; the requesting agent continues from that brief without repeatedly rereading the media.",
+      "questions": [],
+      "question_policy": {
+        "plan_mode": "ask detailed visual/function questions only when no vision model can inspect needed media",
+        "build_or_normal_mode": "avoid extensive questioning; proceed with reasonable assumptions and ask only blocking questions",
+        "simple_tasks": "do not ask extensive questions for simple requests such as a basic coin or simple Blender primitive"
+      }
+    }
+  },
+  "single_model_complex_work": {
+    "summary": {
+      "azure-openai:gpt-5.4": {
+        "tasks": 1,
+        "successes": 1,
+        "failures": 0,
+        "avg_latency_seconds": 4.639,
+        "avg_score": 100,
+        "total_output_chars": 1002,
+        "errors": []
+      },
+      "azure-openai:gpt-4.1": {
+        "tasks": 1,
+        "successes": 1,
+        "failures": 0,
+        "avg_latency_seconds": 3.337,
+        "avg_score": 100,
+        "total_output_chars": 1031,
+        "errors": []
+      },
+      "cloudflare:@cf/mistralai/mistral-small-3.1-24b-instruct": {
+        "tasks": 1,
+        "successes": 1,
+        "failures": 0,
+        "avg_latency_seconds": 5.876,
+        "avg_score": 100,
+        "total_output_chars": 1008,
+        "errors": []
+      },
+      "mistral:mistral-small-latest": {
+        "tasks": 1,
+        "successes": 1,
+        "failures": 0,
+        "avg_latency_seconds": 2.002,
+        "avg_score": 100,
+        "total_output_chars": 910,
+        "errors": []
+      },
+      "cloudflare:@cf/qwen/qwen2.5-coder-32b-instruct": {
+        "tasks": 1,
+        "successes": 1,
+        "failures": 0,
+        "avg_latency_seconds": 7.397,
+        "avg_score": 100,
+        "total_output_chars": 1148,
+        "errors": []
+      }
+    },
+    "runs": [
+      {
+        "model_ref": "azure-openai:gpt-5.4",
+        "task_name": "single_model_complex_work",
+        "ok": true,
+        "elapsed_seconds": 4.639,
+        "output_chars": 1002,
+        "usage": {
+          "completion_tokens": 220,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": 0,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": 0
+          },
+          "latency_checkpoint": {
+            "engine_tbt_ms": 13,
+            "engine_ttft_ms": 101,
+            "engine_ttlt_ms": 3049,
+            "pre_inference_ms": 59,
+            "service_tbt_ms": 13,
+            "service_ttft_ms": 272,
+            "service_ttlt_ms": 3209,
+            "total_duration_ms": 3159,
+            "user_visible_ttft_ms": 212
+          },
+          "prompt_tokens": 100,
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0
+          },
+          "total_tokens": 320
+        },
+        "score": 100,
+        "error": "",
+        "finish_reason": "length"
+      },
+      {
+        "model_ref": "azure-openai:gpt-4.1",
+        "task_name": "single_model_complex_work",
+        "ok": true,
+        "elapsed_seconds": 3.337,
+        "output_chars": 1031,
+        "usage": {
+          "completion_tokens": 220,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": 0,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": 0
+          },
+          "latency_checkpoint": {
+            "engine_tbt_ms": 9,
+            "engine_ttft_ms": 323,
+            "engine_ttlt_ms": 2354,
+            "pre_inference_ms": 97,
+            "service_tbt_ms": 9,
+            "service_ttft_ms": 479,
+            "service_ttlt_ms": 2503,
+            "total_duration_ms": 2421,
+            "user_visible_ttft_ms": 382
+          },
+          "prompt_tokens": 101,
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cached_tokens": 0
+          },
+          "total_tokens": 321
+        },
+        "score": 100,
+        "error": "",
+        "finish_reason": "length"
+      },
+      {
+        "model_ref": "cloudflare:@cf/mistralai/mistral-small-3.1-24b-instruct",
+        "task_name": "single_model_complex_work",
+        "ok": true,
+        "elapsed_seconds": 5.876,
+        "output_chars": 1008,
+        "usage": {
+          "prompt_tokens": 103,
+          "completion_tokens": 220,
+          "total_tokens": 323,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "score": 100,
+        "error": "",
+        "finish_reason": "length"
+      },
+      {
+        "model_ref": "mistral:mistral-small-latest",
+        "task_name": "single_model_complex_work",
+        "ok": true,
+        "elapsed_seconds": 2.002,
+        "output_chars": 910,
+        "usage": {
+          "prompt_tokens": 115,
+          "total_tokens": 335,
+          "completion_tokens": 220,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "score": 100,
+        "error": "",
+        "finish_reason": "length"
+      },
+      {
+        "model_ref": "cloudflare:@cf/qwen/qwen2.5-coder-32b-instruct",
+        "task_name": "single_model_complex_work",
+        "ok": true,
+        "elapsed_seconds": 7.397,
+        "output_chars": 1148,
+        "usage": {
+          "prompt_tokens": 106,
+          "completion_tokens": 220,
+          "total_tokens": 326,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "score": 100,
+        "error": "",
+        "finish_reason": "stop"
+      }
+    ]
+  },
+  "swarm_complex_work": {
+    "ok": true,
+    "elapsed_seconds": 0.004,
+    "score": 100,
+    "agents_used": [
+      "web_scraper",
+      "backend_maker",
+      "app_tester",
+      "ai_reviewer",
+      "documentation",
+      "job_finder",
+      "auto_learner",
+      "cost_optimizer",
+      "provider_health_monitor",
+      "playwright_controller",
+      "secret_scanner",
+      "council_master"
+    ],
+    "agent_count": 12,
+    "sub_agent_count": 26,
+    "provider_routes": {
+      "local": 0,
+      "mcp": 0,
+      "cloud": 13
+    },
+    "council": {
+      "question": "Complex benchmark work: design a secure multi-agent job finder and applier that scrapes listings, uses temporary vision for screenshots, routes coding/security/browser agents to the best providers, keeps token spend low, writes tests, and produces a CI-ready implementation plan. Include architecture, agent roles, security risks, test strategy, and rollback in 220 words or less.",
+      "verdict": "proceed",
+      "yes_votes": 6,
+      "no_votes": 0,
+      "confidence": 80,
+      "vote_line": "6/6 YES",
+      "opinions": [
+        {
+          "agent_name": "council_master",
+          "pillar": "act",
+          "stance": "proceed",
+          "confidence": 72,
+          "reasoning": "council_master recommends proceed after checking act/core concerns with 1 evidence point(s) and 0 risk flag(s).",
+          "risks": [],
+          "evidence": [
+            "business, operational, and execution impact assessed"
+          ]
+        },
+        {
+          "agent_name": "web_scraper",
+          "pillar": "see",
+          "stance": "proceed",
+          "confidence": 72,
+          "reasoning": "web_scraper recommends proceed after checking see/coding concerns with 1 evidence point(s) and 0 risk flag(s).",
+          "risks": [],
+          "evidence": [
+            "research, user signal, or visual evidence requested"
+          ]
+        },
+        {
+          "agent_name": "backend_maker",
+          "pillar": "code",
+          "stance": "proceed",
+          "confidence": 72,
+          "reasoning": "backend_maker recommends proceed after checking code/coding concerns with 1 evidence point(s) and 0 risk flag(s).",
+          "risks": [],
+          "evidence": [
+            "implementation and test impact reviewed"
+          ]
+        },
+        {
+          "agent_name": "app_tester",
+          "pillar": "code",
+          "stance": "proceed",
+          "confidence": 72,
+          "reasoning": "app_tester recommends proceed after checking code/coding concerns with 1 evidence point(s) and 0 risk flag(s).",
+          "risks": [],
+          "evidence": [
+            "implementation and test impact reviewed"
+          ]
+        },
+        {
+          "agent_name": "ai_reviewer",
+          "pillar": "code",
+          "stance": "proceed",
+          "confidence": 72,
+          "reasoning": "ai_reviewer recommends proceed after checking code/coding concerns with 1 evidence point(s) and 0 risk flag(s).",
+          "risks": [],
+          "evidence": [
+            "implementation and test impact reviewed"
+          ]
+        },
+        {
+          "agent_name": "documentation",
+          "pillar": "design",
+          "stance": "proceed",
+          "confidence": 72,
+          "reasoning": "documentation recommends proceed after checking design/creative concerns with 1 evidence point(s) and 0 risk flag(s).",
+          "risks": [],
+          "evidence": [
+            "UX, content, and interaction fit checked"
+          ]
+        }
+      ],
+      "conflicts": [],
+      "summary": "Council vote: 6/6 YES. Verdict: proceed. Confidence: 80%."
+    },
+    "ab_test": {
+      "prompt": "Complex benchmark work: design a secure multi-agent job finder and applier that scrapes listings, uses temporary vision for screenshots, routes coding/security/browser agents to the best providers, keeps token spend low, writes tests, and produces a CI-ready implementation plan. Include architecture, agent roles, security risks, test strategy, and rollback in 220 words or less.",
+      "candidates": [
+        {
+          "id": "A",
+          "name": "Lean Single-Path Plan",
+          "strategy": "Use the smallest specialist set, keep token usage low, build the core path first, then run focused master review.",
+          "strengths": [
+            "lower token cost",
+            "faster delivery",
+            "less coordination overhead"
+          ],
+          "tradeoffs": [
+            "less parallel exploration",
+            "may miss creative alternatives"
+          ],
+          "score": 72
+        },
+        {
+          "id": "B",
+          "name": "Hybrid Multi-Agent Plan",
+          "strategy": "Use cloud models for master/council reasoning, local or cheap models for sub-agent checks, MCP/browser tools for external state, and integrate after specialist work.",
+          "strengths": [
+            "stronger coverage",
+            "hybrid routing",
+            "better validation breadth"
+          ],
+          "tradeoffs": [
+            "slightly higher token use",
+            "more moving parts"
+          ],
+          "score": 78
+        }
+      ],
+      "winner_id": "B",
+      "loser_id": "A",
+      "council_votes": {
+        "web_scraper": "B",
+        "backend_maker": "B",
+        "app_tester": "B",
+        "ai_reviewer": "B",
+        "documentation": "B",
+        "job_finder": "B",
+        "auto_learner": "B",
+        "cost_optimizer": "B"
+      },
+      "summary": "Council selected version B: Hybrid Multi-Agent Plan. Vote A/B: 0/8. Alternative shown: A: Lean Single-Path Plan."
+    },
+    "token_budget": {
+      "single_agent_estimate": 1200,
+      "max_swarm_tokens": 2640,
+      "max_iterations": 1,
+      "max_parallel_agents": 6,
+      "reason": "Bound swarm overhead so multi-agent work does not spend far more than a single-agent run unless explicitly configured higher."
+    },
+    "master_review": {
+      "status": "pass",
+      "confidence": 100,
+      "checks": {
+        "council_completed": true,
+        "council_proceeded": true,
+        "parts_connected": true,
+        "no_model_failures": true,
+        "preflight_reviews_passed": true,
+        "loop_free": true
+      },
+      "risks": [],
+      "summary": "Master review pass. 6/6 checks passed. Confidence: 100%."
+    }
+  },
+  "opencode_provider_runs": [
+    {
+      "provider": "cloudflare",
+      "model": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "run": 1,
+      "ok": true,
+      "elapsed_seconds": 9.298,
+      "output_chars": 250,
+      "stdout_text": "{\"type\":\"step_start\",\"timestamp\":1780764925989,\"sessionID\":\"ses_16223a5f8ffezscYihAJ3k1j7t\",\"part\":{\"id\":\"prt_e9ddc601e001Qj6UmwFSAzgzMu\",\"messageID\":\"msg_e9ddc5bb5001R6eZLKxwNtgjGx\",\"sessionID\":\"ses_16223a5f8ffezscYihAJ3k1j7t\",\"type\":\"step-start\"}}",
+      "stderr": "",
+      "returncode": 0
+    },
+    {
+      "provider": "cloudflare",
+      "model": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "run": 2,
+      "ok": true,
+      "elapsed_seconds": 11.216,
+      "output_chars": 250,
+      "stdout_text": "{\"type\":\"step_start\",\"timestamp\":1780764935864,\"sessionID\":\"ses_162237feeffe7uSVjNijNSsIzr\",\"part\":{\"id\":\"prt_e9ddc86b0001i7GMJyfrdOlhaq\",\"messageID\":\"msg_e9ddc816b001Y8527w2IA5hBbg\",\"sessionID\":\"ses_162237feeffe7uSVjNijNSsIzr\",\"type\":\"step-start\"}}",
+      "stderr": "",
+      "returncode": 0
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3-32b",
+      "run": 1,
+      "ok": true,
+      "elapsed_seconds": 4.648,
+      "output_chars": 250,
+      "stdout_text": "{\"type\":\"step_start\",\"timestamp\":1780764948257,\"sessionID\":\"ses_1622351c8ffeK3Zy58xjNt1k18\",\"part\":{\"id\":\"prt_e9ddcb70e001KiIKcG8kFTCd0w\",\"messageID\":\"msg_e9ddcafda0014rWxrhEJtzqFD0\",\"sessionID\":\"ses_1622351c8ffeK3Zy58xjNt1k18\",\"type\":\"step-start\"}}",
+      "stderr": "",
+      "returncode": 0
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3-32b",
+      "run": 2,
+      "ok": true,
+      "elapsed_seconds": 30.61,
+      "output_chars": 250,
+      "stdout_text": "{\"type\":\"step_start\",\"timestamp\":1780764978991,\"sessionID\":\"ses_162233f28ffeU7WuBlB8lvccZp\",\"part\":{\"id\":\"prt_e9ddd2f16001dk2ueQGjYwn9wA\",\"messageID\":\"msg_e9ddcc2150012z86ZOW517DRGb\",\"sessionID\":\"ses_162233f28ffeU7WuBlB8lvccZp\",\"type\":\"step-start\"}}",
+      "stderr": "",
+      "returncode": 0
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-small-latest",
+      "run": 1,
+      "ok": true,
+      "elapsed_seconds": 7.011,
+      "output_chars": 16932,
+      "stdout_text": "{\"type\":\"step_start\",\"timestamp\":1780764983648,\"sessionID\":\"ses_16222c41dffeKf1Vtgm6ZZ5GOd\",\"part\":{\"id\":\"prt_e9ddd415b001zTrTf1KN1TzDnL\",\"messageID\":\"msg_e9ddd3d7b001mEr7p1VgisIUXV\",\"sessionID\":\"ses_16222c41dffeKf1Vtgm6ZZ5GOd\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1780764983856,\"sessionID\":\"ses_16222c41dffeKf1Vtgm6ZZ5GOd\",\"part\":{\"type\":\"tool\",\"tool\":\"skill\",\"callID\":\"cXzT9bcqX\",\"state\":{\"status\":\"completed\",\"input\":{\"name\":\"customize-opencode\"},\"output\":\"<skill_content name=\\\"customize-opencode\\\">\\n# Skill: customize-opencode\\n\\n<!--\\n  Built-in skill. Name and description are registered in code at\\n  packages/core/src/plugin/skill.ts\\n  and CUSTOMIZE_OPENCODE_SKILL_DESCRIPTION). The body below becomes the\\n  skill's content.\\n-->\\n\\n# Customizing opencode\\n\\nopencode validates its own config strictly and refuses to start when a field\\nis wrong. The shapes below cover the common surface area, but they are a\\n**summary, not the source of truth**.\\n\\n## Full schema reference\\n\\nThe authoritative list of every config option \u2014 with field types, enums,\\ndefaults, and descriptions \u2014 lives in the published JSON Schema:\\n\\n**<https://opencode.ai/config.json>**\\n\\nIf a field is not documented in this skill, or you need to confirm an exact\\nshape before writing config, **fetch that URL and read the schema directly**\\nrather than guessing. opencode hard-fails on invalid c...[trimmed]",
+      "stderr": "",
+      "returncode": 0
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-small-latest",
+      "run": 2,
+      "ok": true,
+      "elapsed_seconds": 7.174,
+      "output_chars": 16861,
+      "stdout_text": "{\"type\":\"step_start\",\"timestamp\":1780764991291,\"sessionID\":\"ses_16222a790ffez1mooXhRcQFX2e\",\"part\":{\"id\":\"prt_e9ddd5f25001nFwazWhB09JbS0\",\"messageID\":\"msg_e9ddd5a0c001n1kEGANURe3ZoL\",\"sessionID\":\"ses_16222a790ffez1mooXhRcQFX2e\",\"type\":\"step-start\"}}\n{\"type\":\"tool_use\",\"timestamp\":1780764991429,\"sessionID\":\"ses_16222a790ffez1mooXhRcQFX2e\",\"part\":{\"type\":\"tool\",\"tool\":\"skill\",\"callID\":\"rYWsBM11w\",\"state\":{\"status\":\"completed\",\"input\":{\"name\":\"customize-opencode\"},\"output\":\"<skill_content name=\\\"customize-opencode\\\">\\n# Skill: customize-opencode\\n\\n<!--\\n  Built-in skill. Name and description are registered in code at\\n  packages/core/src/plugin/skill.ts\\n  and CUSTOMIZE_OPENCODE_SKILL_DESCRIPTION). The body below becomes the\\n  skill's content.\\n-->\\n\\n# Customizing opencode\\n\\nopencode validates its own config strictly and refuses to start when a field\\nis wrong. The shapes below cover the common surface area, but they are a\\n**summary, not the source of truth**.\\n\\n## Full schema reference\\n\\nThe authoritative list of every config option \u2014 with field types, enums,\\ndefaults, and descriptions \u2014 lives in the published JSON Schema:\\n\\n**<https://opencode.ai/config.json>**\\n\\nIf a field is not documented in this skill, or you need to confirm an exact\\nshape before writing config, **fetch that URL and read the schema directly**\\nrather than guessing. opencode hard-fails on invalid c...[trimmed]",
+      "stderr": "",
+      "returncode": 0
+    }
+  ],
+  "comparison": {
+    "single_successful_models": 5,
+    "single_avg_score": 100,
+    "single_avg_latency_seconds": 4.65,
+    "swarm_score": 100,
+    "swarm_latency_seconds": 0.004,
+    "swarm_agents_used": 12,
+    "swarm_sub_agents_planned": 26,
+    "winner_by_score": "agent_swarm"
+  },
+  "status": {
+    "cli_versions_ok": 8,
+    "cli_versions_checked": 9,
+    "headless_cli_ok": 2,
+    "headless_cli_checked": 2,
+    "headless_cli_skipped": 1,
+    "opencode_ok": 6,
+    "opencode_checked": 6,
+    "single_model_ok": 5,
+    "single_model_checked": 5,
+    "swarm_ok": true,
+    "temporary_vision_route": "delegate_to_temporary_vision_model",
+    "temporary_vision_model": "azure-openai:gpt-4.1"
+  }
+}

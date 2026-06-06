@@ -64,8 +64,12 @@ def test_feature_benchmark_covers_swarm_capabilities(tmp_path):
         "ab_testing_winner_and_alternative",
         "hermes_self_evolution_skill_creation",
         "advanced_capabilities_and_auto_learner",
+        "temporary_vision_bridge_routes",
         "real_time_dashboard_export",
     }
+    vision_result = next(result for result in results if result.feature == "temporary_vision_bridge_routes")
+    assert vision_result.details["plan_mode_questions"] >= 7
+    assert vision_result.details["build_mode_route_without_vision"] == "continue_without_annoying_user"
 
     report = write_full_benchmark_report(tmp_path / "full.json", results, [])
     data = json.loads(report.read_text(encoding="utf-8"))

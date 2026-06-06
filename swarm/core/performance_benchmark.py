@@ -35,6 +35,7 @@ from swarm.core.state import AgentTurn, SharedState
 from swarm.core.sub_agent_planner import build_sub_agent_plan
 from swarm.core.switch_memory import SwitchMemory
 from swarm.core.token_budget import build_token_budget_plan
+from swarm.core.vision_bridge import plan_temporary_vision
 from swarm.providers.base import Message
 from swarm.providers.factory import ProviderFactory
 
@@ -306,6 +307,52 @@ def run_feature_benchmark(config: SwarmConfig, output_dir: str | Path = "example
 
     record("advanced_capabilities_and_auto_learner", advanced_capabilities_feature)
 
+    def temporary_vision_feature():
+        configured_vision = config.get_best_vision_model()
+        delegate = plan_temporary_vision(
+            "backend_maker",
+            "qwen/qwen3-coder",
+            "inspect a dashboard screenshot, extract layout/function details, then continue backend validation work",
+            "image",
+            "build",
+            [configured_vision] if configured_vision else "",
+        )
+        planning_fallback = plan_temporary_vision(
+            "building_designer",
+            "mistral-small",
+            "plan a building interior and exterior from a missing reference image",
+            "image",
+            "plan",
+            "",
+        )
+        build_fallback = plan_temporary_vision(
+            "building_designer",
+            "mistral-small",
+            "plan a building interior and exterior from a missing reference image",
+            "image",
+            "build",
+            "",
+        )
+        native = plan_temporary_vision(
+            "figma_controller",
+            configured_vision or "gemini-vision",
+            "inspect a Figma animation screenshot",
+            "image",
+            "build",
+            [configured_vision] if configured_vision else "",
+        )
+        return {
+            "configured_vision_model": configured_vision,
+            "delegate_route": delegate["route"],
+            "temporary_vision_model": delegate["temporary_vision_model"],
+            "plan_mode_questions": len(planning_fallback["questions"]),
+            "build_mode_route_without_vision": build_fallback["route"],
+            "native_route": native["route"],
+            "handoff_policy": delegate["handoff_policy"],
+        }
+
+    record("temporary_vision_bridge_routes", temporary_vision_feature)
+
     def master_review_feature():
         state = SharedState(user_input="benchmark every feature")
         if council:
@@ -514,6 +561,13 @@ def _score_feature_result(feature: str, value) -> int:
         return 100 if value.get("proposal_valid") and value.get("validation_ok") and value.get("saved") and value.get("listed", 0) >= 1 else 50
     if feature == "advanced_capabilities_and_auto_learner":
         return 100 if value.get("capabilities", 0) >= 55 and value.get("has_auto_learner") and value.get("security_primary_agent") == "secret_scanner" else 50
+    if feature == "temporary_vision_bridge_routes":
+        delegate_ok = (
+            (value.get("configured_vision_model") and value.get("delegate_route") == "delegate_to_temporary_vision_model")
+            or (not value.get("configured_vision_model") and value.get("delegate_route") == "continue_without_annoying_user")
+        )
+        fallback_ok = value.get("plan_mode_questions", 0) >= 7 and value.get("build_mode_route_without_vision") == "continue_without_annoying_user"
+        return 100 if delegate_ok and fallback_ok and value.get("handoff_policy") else 50
     return 90 if value else 50
 
 

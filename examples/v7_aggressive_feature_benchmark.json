@@ -1,17 +1,17 @@
 {
   "feature_summary": {
-    "features": 14,
-    "successes": 14,
+    "features": 15,
+    "successes": 15,
     "failures": 0,
-    "avg_latency_seconds": 0.004,
-    "avg_score": 97.1,
+    "avg_latency_seconds": 0.0037,
+    "avg_score": 97.3,
     "errors": {}
   },
   "features": [
     {
       "feature": "agent_catalog_4_pillars_20_plus_agents",
       "ok": true,
-      "elapsed_seconds": 0.001,
+      "elapsed_seconds": 0.0009,
       "score": 100,
       "details": {
         "agents": 98,
@@ -28,7 +28,7 @@
     {
       "feature": "smart_ai_selection_hybrid_routing",
       "ok": true,
-      "elapsed_seconds": 0.0447,
+      "elapsed_seconds": 0.0437,
       "score": 100,
       "details": {
         "assignments": 174,
@@ -55,7 +55,7 @@
     {
       "feature": "always_on_council_voting",
       "ok": true,
-      "elapsed_seconds": 0.0004,
+      "elapsed_seconds": 0.0003,
       "score": 100,
       "details": {
         "verdict": "proceed",
@@ -106,7 +106,7 @@
     {
       "feature": "sub_agent_planning",
       "ok": true,
-      "elapsed_seconds": 0.0002,
+      "elapsed_seconds": 0.0001,
       "score": 90,
       "details": {
         "planned_agents": 135,
@@ -249,7 +249,7 @@
     {
       "feature": "hermes_self_evolution_skill_creation",
       "ok": true,
-      "elapsed_seconds": 0.0048,
+      "elapsed_seconds": 0.0051,
       "score": 100,
       "details": {
         "proposal_valid": true,
@@ -299,6 +299,22 @@
       "error": ""
     },
     {
+      "feature": "temporary_vision_bridge_routes",
+      "ok": true,
+      "elapsed_seconds": 0.0004,
+      "score": 100,
+      "details": {
+        "configured_vision_model": "azure-openai:gpt-4.1",
+        "delegate_route": "delegate_to_temporary_vision_model",
+        "temporary_vision_model": "azure-openai:gpt-4.1",
+        "plan_mode_questions": 9,
+        "build_mode_route_without_vision": "continue_without_annoying_user",
+        "native_route": "delegate_to_temporary_vision_model",
+        "handoff_policy": "Vision model returns a full structured visual brief once; the requesting agent continues from that brief without repeatedly rereading the media."
+      },
+      "error": ""
+    },
+    {
       "feature": "master_integration_review",
       "ok": true,
       "elapsed_seconds": 0.0002,
@@ -322,7 +338,7 @@
     {
       "feature": "real_time_dashboard_export",
       "ok": true,
-      "elapsed_seconds": 0.0024,
+      "elapsed_seconds": 0.0025,
       "score": 100,
       "details": {
         "path": "examples\\feature_benchmark_dashboard.html",
