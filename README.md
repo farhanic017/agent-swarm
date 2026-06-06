@@ -467,7 +467,14 @@ agent-swarm/
 
 ## Version History
 
-### v8 (Current) - Advanced Capability Agents & Auto Learner
+### v8 (Current) - Live Demo, Benchmarks & Version Polish
+- Updated the README and live demo branding to v8.
+- Refined the live demo connected-agent graph so the design node, provider labels, master review, publish flow, and feature chips fit cleanly in the 16:9 MP4/GIF preview.
+- Improved benchmark chart rendering with compact bar labels, vertical full model names, and guaranteed Kimi K2.6 visibility across the comparison and coding graphs.
+- Regenerated the inline live demo assets, benchmark images, and poster used by the README.
+- Raised regression coverage to the latest full-suite passing count shown in the badge above.
+
+### v7 - Advanced Capability Agents & Auto Learner
 - Expanded the built-in catalog to 102 agents, adding specialist roles for orchestration, checkpoint/resume, replay, queues, pipelines, memory, hallucination recovery, knowledge graphs, semantic run search, Codex caching, test generation, migrations, dependency auditing, code explanation, refactoring, CI/CD, model training, cost optimization, provider health, Playwright, forms, monitoring, API exploration, secret scanning, sandboxing, storyboards, brand consistency, i18n, music/audio, AR/VR, game development, competitor research, SEO, analytics interpretation, campaigns, social posting/management, contracts, pitch decks, GitHub Actions, webhooks, n8n workflows, chatops, Notion, Linear/Jira, Supabase, Stripe, Docker, OpenTelemetry, cost dashboards, leaderboards, run diffs, anomaly detection, VS Code, swarm builder UI, marketplace, cloud deploy, TypeScript SDK, REST API, and auto learning.
 - Added 70 advanced capability definitions with deterministic planning, suggested agents, expected outputs, approval gates, and guardrails.
 - Added hallucination recovery, n8n workflow creator, game developer, and social media poster/manager planners with registry tools, specialist agents, sub-agent routing, and benchmark coverage.
@@ -478,7 +485,6 @@ agent-swarm/
 - Added Moonshot/Kimi graph coverage plus Recraft image, Kling video, NVIDIA, Zyphra, Hugging Face, Alibaba/DashScope, Perplexity, and Microsoft/Azure AI provider-family detection.
 - Added heavy high-detail Blender planning mode with preview-first guardrails, incremental saves, proxy/decimated exports, and final heavy-render approval.
 - Added benchmark chart generation for swarm-vs-single coverage, public model comparison cards, coding comparison cards, and the full CLI verification matrix.
-- Raised regression coverage to the latest full-suite passing count shown in the badge above.
 
 ### v6 - Hermes Self-Evolution & Skill Creation
 - Added a dedicated Hermes self-evolution agent that can observe repeated work, propose reusable skills, validate them, persist versioned manifests, and expose evolved skills for future swarm runs.
