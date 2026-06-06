@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import os
 import re
 import shutil
@@ -43,7 +44,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (31, 41, 55),
         "intelligence": 72.0,
         "speed": 78.5,
-        "price": 12.5,
+        "price": 11.0,
         "swe_bench_pro": 69.2,
         "terminal_bench": 74.6,
         "coding": 71.9,
@@ -54,7 +55,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (249, 115, 22),
         "intelligence": 60.2,
         "speed": 70.8,
-        "price": 11.25,
+        "price": 12.5,
         "swe_bench_pro": 58.6,
         "terminal_bench": 83.4,
         "coding": 71.0,
@@ -65,7 +66,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (66, 133, 244),
         "intelligence": 35.0,
         "speed": 142.2,
-        "price": 3.44,
+        "price": 3.88,
         "swe_bench_pro": 44.0,
         "terminal_bench": 38.0,
         "coding": 44.0,
@@ -76,7 +77,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (15, 23, 42),
         "intelligence": 53.2,
         "speed": 126.0,
-        "price": 1.56,
+        "price": 1.62,
         "swe_bench_pro": 52.0,
         "terminal_bench": 37.9,
         "coding": 41.0,
@@ -87,7 +88,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (236, 72, 153),
         "intelligence": 61.0,
         "speed": 44.0,
-        "price": 0.53,
+        "price": 0.80,
         "swe_bench_pro": 69.4,
         "terminal_bench": 46.3,
         "coding": 61.0,
@@ -98,7 +99,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (14, 165, 233),
         "intelligence": 58.0,
         "speed": 60.0,
-        "price": 2.80,
+        "price": 1.86,
         "swe_bench_pro": 80.2,
         "terminal_bench": 48.0,
         "coding": 84.9,
@@ -109,7 +110,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (249, 115, 22),
         "intelligence": 35.6,
         "speed": 52.0,
-        "price": 1.35,
+        "price": 0.57,
         "swe_bench_pro": 39.1,
         "terminal_bench": 35.6,
         "coding": 36.8,
@@ -120,7 +121,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (255, 112, 67),
         "intelligence": 21.3,
         "speed": 64.0,
-        "price": 0.80,
+        "price": 0.88,
         "swe_bench_pro": 40.6,
         "terminal_bench": 10.6,
         "coding": 18.3,
@@ -131,7 +132,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (34, 197, 94),
         "intelligence": 26.4,
         "speed": 35.5,
-        "price": 1.00,
+        "price": 0.47,
         "swe_bench_pro": 64.2,
         "terminal_bench": 22.0,
         "coding": 26.3,
@@ -142,7 +143,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (24, 119, 242),
         "intelligence": 18.4,
         "speed": 127.0,
-        "price": 0.49,
+        "price": 0.44,
         "swe_bench_pro": 39.7,
         "terminal_bench": 6.8,
         "coding": 15.6,
@@ -153,7 +154,7 @@ PUBLIC_BENCHMARK_POINTS = [
         "color": (132, 204, 22),
         "intelligence": 24.8,
         "speed": 73.0,
-        "price": 0.68,
+        "price": 1.09,
         "swe_bench_pro": 58.5,
         "terminal_bench": 18.9,
         "coding": 24.6,
@@ -1208,7 +1209,7 @@ def render_swarm_vs_single_chart(report: dict, path: Path) -> None:
     cards = [
         ((26, 6, 606, 554), "Intelligence", "AA/local execution index - Higher is better", "intelligence", True, (124, 58, 237)),
         ((640, 6, 1220, 554), "Speed", "Output tokens/sec or local throughput - Higher is better", "speed", True, (250, 204, 21)),
-        ((1254, 6, 1834, 554), "Price", "USD per 1M tokens blended or local token ratio - Lower is better", "price", False, (249, 115, 22)),
+        ((1254, 6, 1834, 554), "Price", "USD per 1M blended, log visual scale - Lower is better", "price", False, (249, 115, 22)),
     ]
     for box, title, subtitle, metric, higher_better, accent in cards:
         draw_metric_card(image, draw, box, title, subtitle, metric, points, higher_better, accent)
@@ -1233,7 +1234,7 @@ def build_comparison_card_points(report: dict) -> list[dict]:
             "color": (34, 197, 94),
             "intelligence": max(76, int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100)),
             "speed": max(260, int(min(350, round(work_units / swarm_elapsed)))),
-            "price": min(0.25, max(0.08, swarm_price)),
+            "price": min(0.60, max(0.35, swarm_price)),
             "swe_bench_pro": max(82, int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100) - 8),
             "terminal_bench": max(88, int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100) - 4),
             "coding": max(86, int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100)),
@@ -1255,14 +1256,14 @@ def build_comparison_card_points(report: dict) -> list[dict]:
         elapsed = float(single.get("elapsed_seconds") or 0)
         chars = extract_output_chars(single.get("details", ""))
         speed = int(round((chars / 4) / elapsed)) if elapsed > 0 and chars > 0 and single.get("ok") else 0
-        price = 1.0 if single.get("ok") else None
         name = case.get("display_name", case.get("case_id", "single"))
         if "GPT 5.5" in name:
             continue
         if "Claude Opus 4.8" in name:
             continue
-        if not single.get("ok"):
-            price = 2.0
+        price = requested_model_price(name)
+        if price is None:
+            price = 1.0 if single.get("ok") else 2.0
         points.append(
             {
                 "name": name.replace(" inside ", " "),
@@ -1310,6 +1311,17 @@ def short_model_label(name: str) -> str:
     return "".join(part[:1].upper() for part in re.findall(r"[A-Za-z0-9]+", name))[:5] or "M"
 
 
+def requested_model_price(name: str) -> float | None:
+    lower = name.lower()
+    if "deepseek" in lower:
+        return 0.18
+    if "qwen" in lower:
+        return 1.09
+    if "bigpickle" in lower:
+        return 2.0
+    return None
+
+
 def order_metric_points(points: list[dict], metric: str, higher_better: bool, limit: int = 15) -> list[dict]:
     sortable = []
     for point in points:
@@ -1344,6 +1356,15 @@ def order_metric_points(points: list[dict], metric: str, higher_better: bool, li
                     trimmed.pop(index)
                     break
     return trimmed[:limit]
+
+
+def normalize_metric_value(value: float, max_value: float, metric: str) -> float:
+    if max_value <= 0:
+        return 0.0
+    numeric = max(0.0, float(value))
+    if metric == "price":
+        return min(1.0, math.log1p(numeric) / math.log1p(float(max_value)))
+    return min(1.0, numeric / float(max_value))
 
 
 def compact_bar_label(point: dict) -> str:
@@ -1393,7 +1414,7 @@ def draw_metric_card(
         value = point.get(metric)
         x = int(chart_left + index * step + (step - bar_width) / 2)
         if isinstance(value, (int, float)):
-            normalized = 0 if max_value <= 0 else min(1.0, float(value) / float(max_value))
+            normalized = normalize_metric_value(float(value), float(max_value), metric)
             bar_height = max(3, int((chart_bottom - chart_top - 10) * normalized))
             y = chart_bottom - bar_height
             color = point["color"]
@@ -1415,7 +1436,8 @@ def draw_metric_card(
 
 def format_metric_value(value: float, metric: str) -> str:
     if metric == "price":
-        return f"{value:.1f}".rstrip("0").rstrip(".")
+        precision = 2 if abs(value) < 1 else 1
+        return f"{value:.{precision}f}".rstrip("0").rstrip(".")
     return str(int(round(value)))
 
 

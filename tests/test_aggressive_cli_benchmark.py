@@ -9,8 +9,10 @@ from scripts.run_aggressive_cli_benchmark import (
     compare_single_vs_swarm,
     default_opencode_targets,
     normalize_cli_version_result,
+    normalize_metric_value,
     order_metric_points,
     render_benchmark_charts,
+    requested_model_price,
     run_requested_model_benchmarks,
     run_swarm_complex_work,
     run_temporary_vision_probe,
@@ -181,6 +183,36 @@ def test_public_benchmark_points_cover_popular_models_without_missing_metrics():
     for point in points:
         for metric in ("intelligence", "speed", "price", "swe_bench_pro", "terminal_bench", "coding"):
             assert isinstance(point.get(metric), (int, float)), (point["name"], metric)
+
+
+def test_public_benchmark_prices_use_refreshed_blended_rates():
+    prices = {point["name"]: point["price"] for point in PUBLIC_BENCHMARK_POINTS}
+
+    assert prices["GPT-5.5"] == 12.5
+    assert prices["Claude Opus 4.8"] == 11.0
+    assert prices["Gemini 2.5 Pro"] == 3.88
+    assert prices["Grok 4.3"] == 1.62
+    assert prices["Kimi K2.6"] == 1.86
+    assert prices["Llama 4 Maverick"] == 0.44
+
+
+def test_agent_swarm_price_is_low_but_not_unrealistically_flat():
+    points = build_comparison_card_points({"comparison": {}, "swarm_complex_work": {"agent_count": 12, "sub_agent_count": 20}})
+    swarm = next(point for point in points if point["name"] == "Agent Swarm")
+
+    assert 0.35 <= swarm["price"] <= 0.60
+
+
+def test_requested_model_prices_use_known_rates_before_fallbacks():
+    assert requested_model_price("DeepSeek 4V Flash Free inside OpenCode") == 0.18
+    assert requested_model_price("Qwen single model") == 1.09
+    assert requested_model_price("Bigpickle inside OpenCode") == 2.0
+    assert requested_model_price("Unknown Provider Model") is None
+
+
+def test_price_metric_uses_log_scale_so_low_cost_models_stay_visible():
+    assert normalize_metric_value(0.44, 12.5, "price") > 0.14
+    assert normalize_metric_value(12.5, 12.5, "price") == 1.0
 
 
 def test_metric_cards_keep_kimi_visible_when_requested_models_are_added():
