@@ -132,7 +132,7 @@ def base_frame(frame: int) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     for y in range(0, HEIGHT, 64):
         draw.line((0, y, WIDTH, y), fill=(15, 23, 38))
     draw.rectangle((0, 0, WIDTH, 72), fill=(10, 16, 28))
-    draw_text(draw, (34, 20), "Agent Swarm v7", fnt=F_H2)
+    draw_text(draw, (34, 20), "Agent Swarm v8", fnt=F_H2)
     draw_text(draw, (1110, 23), "16:9 live demo", fill=MUTED, fnt=F_SMALL)
     return img, draw
 
@@ -237,29 +237,39 @@ def scene_connected_graph(draw, local: int):
     draw_text(draw, (58, 104), "Live graph: agents verify, connect, then publish", fnt=F_H1)
     draw_text(draw, (62, 145), "Every specialist verifies its slice, connects artifacts, then passes evidence to master review and publish.", fill=MUTED, fnt=F_SMALL)
     graph_agents = [
-        ("coder", "kimi", 92, 208, GREEN),
-        ("reviewer", "openrouter", 92, 288, GREEN),
-        ("security", "fireworks", 92, 368, RED),
-        ("testing", "groq", 92, 448, BLUE),
-        ("debugging", "qwen", 92, 528, GREEN),
-        ("researcher", "microsoft", 360, 205, BLUE),
-        ("analytics", "alibaba", 360, 295, GREEN),
-        ("ux_research", "cloudflare", 360, 385, BLUE),
-        ("photo_editor", "recraft", 360, 475, PINK),
-        ("writer", "claude", 632, 205, PURPLE),
-        ("localization", "mistral", 632, 295, PURPLE),
-        ("design", "gemini", 632, 385, PURPLE),
-        ("figma_controller", "browser", 632, 475, PINK),
-        ("marketing", "perplexity", 1002, 205, AMBER),
-        ("finance", "nvidia", 1002, 285, AMBER),
-        ("trading", "mcp", 1002, 365, AMBER),
-        ("product_manager", "huggingface", 1002, 445, AMBER),
-        ("master_review", "verify", 1002, 525, GREEN),
-        ("publish", "release", 1162, 365, BLUE),
-        ("n8n_workflow", "nodes", 1162, 215, GREEN),
-        ("game_developer", "kling", 1162, 285, BLUE),
-        ("social_manager", "queue", 1162, 445, AMBER),
+        ("coder", "kimi", 90, 205, GREEN),
+        ("reviewer", "openrouter", 90, 285, GREEN),
+        ("security", "fireworks", 90, 365, RED),
+        ("testing", "groq", 90, 445, BLUE),
+        ("debugging", "qwen", 90, 525, GREEN),
+        ("researcher", "microsoft", 340, 205, BLUE),
+        ("analytics", "alibaba", 340, 300, GREEN),
+        ("ux_research", "cloudflare", 340, 395, BLUE),
+        ("photo_editor", "recraft", 340, 490, PINK),
+        ("writer", "claude", 620, 205, PURPLE),
+        ("localization", "mistral", 620, 290, PURPLE),
+        ("design", "gemini", 620, 375, PURPLE),
+        ("figma_controller", "browser", 620, 460, PINK),
+        ("marketing", "perplexity", 930, 205, AMBER),
+        ("finance", "nvidia", 930, 285, AMBER),
+        ("trading", "mcp", 930, 365, AMBER),
+        ("product_manager", "huggingface", 930, 445, AMBER),
+        ("master_review", "verify", 930, 525, GREEN),
+        ("n8n_workflow", "nodes", 1160, 205, GREEN),
+        ("game_developer", "kling", 1160, 285, BLUE),
+        ("publish", "release", 1160, 365, BLUE),
+        ("social_manager", "queue", 1160, 445, AMBER),
     ]
+    label_map = {
+        "ux_research": "ux",
+        "photo_editor": "photo",
+        "figma_controller": "figma",
+        "product_manager": "product",
+        "master_review": "master",
+        "n8n_workflow": "n8n",
+        "game_developer": "game",
+        "social_manager": "social",
+    }
     positions = {name: (x, y) for name, _, x, y, _ in graph_agents}
     edges = [
         ("coder", "researcher"), ("coder", "design"), ("reviewer", "analytics"), ("security", "design"),
@@ -285,18 +295,19 @@ def scene_connected_graph(draw, local: int):
         px = x1 + (x2 - x1) * phase
         py = y1 + (y2 - y1) * phase
         draw.ellipse((px - 5, py - 5, px + 5, py + 5), fill=GREEN if idx % 2 == 0 else BLUE)
-    draw_round(draw, (558, 344, 706, 428), 20, (38, 25, 72), PURPLE, 3)
-    draw_text(draw, (632, 374), "design", fill=TEXT, fnt=F_H2, anchor="mm")
-    draw_text(draw, (632, 403), "hub", fill=MUTED, fnt=F_TINY, anchor="mm")
     for name, provider, x, y, color in graph_agents:
-        if name == "design":
-            continue
         active = (local // 9 + len(name)) % 4 != 0
         radius = 18 + (5 * math.sin((local + x + y) / 13) if active else 0)
+        if name == "design":
+            radius += 6
         draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=(18, 28, 44), outline=color, width=3)
         draw.ellipse((x + 22, y - 22, x + 32, y - 12), fill=GREEN if active else MUTED)
-        draw_text(draw, (x, y + 32), name, fill=TEXT, fnt=F_TINY, anchor="mm")
-        draw_text(draw, (x, y + 50), provider, fill=MUTED, fnt=F_TINY, anchor="mm")
+        label = label_map.get(name, name)
+        label_y = y + radius + 14
+        provider_y = label_y + 15
+        draw_round(draw, (x - 45, label_y - 3, x + 45, provider_y + 13), 7, (8, 13, 23))
+        draw_text(draw, (x, label_y), label, fill=TEXT, fnt=F_TINY, anchor="mm")
+        draw_text(draw, (x, provider_y), provider, fill=MUTED, fnt=F_TINY, anchor="mm")
     hx, hy = positions["hermes"]
     draw.ellipse((hx - 18, hy - 18, hx + 18, hy + 18), fill=(18, 28, 44), outline=PURPLE, width=3)
     draw_text(draw, (hx, hy + 33), "hermes", fill=TEXT, fnt=F_TINY, anchor="mm")
