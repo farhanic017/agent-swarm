@@ -14,7 +14,10 @@ from swarm.core.debug_collab import DebugCollaboration
 from swarm.core.learning import LessonLearner
 from swarm.core.context import build_compaction_summary, format_compaction_summary
 from swarm.core.docs_integration import plan_docs_for_task
+from swarm.core.file_access import describe_file_access_policy, secure_list_directory, secure_read_file, secure_write_file
+from swarm.core.graphify import build_graphify_payload, build_graphify_project_map, export_graphify_payload
 from swarm.core.mcp_marketplace import list_mcp_marketplace, plan_mcp_connectors
+from swarm.core.obsidian import build_obsidian_note, plan_obsidian_vault
 from swarm.core.preflight_review import review_agent_output, format_github_review_comments
 from swarm.core.media_apps import list_media_apps, build_mockup_video_plan, build_voice_workflow_plan
 from swarm.core.skill_runtime import plan_required_skills
@@ -72,8 +75,8 @@ class ToolRegistry:
 
         registry.register(Tool(
             name="read_file",
-            description="Read the contents of a file",
-            func=lambda path: open(path, "r", encoding="utf-8").read(),
+            description="Read a file only when it is inside AGENT_SWARM_ALLOWED_ROOTS or the current working directory and is not a sensitive credential path.",
+            func=secure_read_file,
             parameters={
                 "type": "object",
                 "properties": {
@@ -85,8 +88,8 @@ class ToolRegistry:
 
         registry.register(Tool(
             name="write_file",
-            description="Write content to a file",
-            func=lambda path, content: (lambda: (open(path, "w", encoding="utf-8").write(content), f"Written to {path}")[1])(),
+            description="Write a file only when it is inside AGENT_SWARM_ALLOWED_ROOTS or the current working directory and is not a sensitive credential path.",
+            func=secure_write_file,
             parameters={
                 "type": "object",
                 "properties": {
@@ -99,8 +102,8 @@ class ToolRegistry:
 
         registry.register(Tool(
             name="list_directory",
-            description="List files in a directory",
-            func=lambda path: json.dumps([str(p) for p in __import__("pathlib").Path(path).iterdir()], indent=2),
+            description="List a directory only when it is inside AGENT_SWARM_ALLOWED_ROOTS or the current working directory and is not a sensitive credential path.",
+            func=secure_list_directory,
             parameters={
                 "type": "object",
                 "properties": {
@@ -158,6 +161,7 @@ class ToolRegistry:
         registry._register_preflight_review_tools()
         registry._register_media_app_tools()
         registry._register_environment_tools()
+        registry._register_knowledge_app_tools()
         registry._register_context_docs_mcp_tools()
 
         return registry
@@ -439,6 +443,105 @@ class ToolRegistry:
             description="Detect local model runtimes, CLI agents, IDE agents, and common MCP support without blocking on unavailable tools.",
             func=lambda: json.dumps(discover_environment_support(), indent=2),
             parameters={"type": "object", "properties": {}, "required": []},
+        ))
+
+    def _register_knowledge_app_tools(self):
+        self.register(Tool(
+            name="describe_file_access_policy",
+            description="Show the scoped file-access policy that prevents agents from reading or writing files outside allowed project roots.",
+            func=lambda: json.dumps(describe_file_access_policy(), indent=2),
+            parameters={"type": "object", "properties": {}, "required": []},
+        ))
+        self.register(Tool(
+            name="build_graphify_map",
+            description="Build an in-memory Graphify-compatible graph payload from a title, nodes, and edges.",
+            func=lambda title, nodes=None, edges=None: json.dumps(
+                build_graphify_payload(
+                    title,
+                    json.loads(nodes) if isinstance(nodes, str) and nodes.strip() else None,
+                    json.loads(edges) if isinstance(edges, str) and edges.strip() else None,
+                ),
+                indent=2,
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "nodes": {"type": "string", "description": "Optional JSON array of node objects"},
+                    "edges": {"type": "string", "description": "Optional JSON array of edge objects"},
+                },
+                "required": ["title"],
+            },
+        ))
+        self.register(Tool(
+            name="build_graphify_project_map",
+            description="Build a Graphify project map linking a project to agents and artifacts.",
+            func=lambda project, agents="", artifacts="": json.dumps(
+                build_graphify_project_map(
+                    project,
+                    [item.strip() for item in agents.split(",") if item.strip()],
+                    [item.strip() for item in artifacts.split(",") if item.strip()],
+                ),
+                indent=2,
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "project": {"type": "string"},
+                    "agents": {"type": "string", "description": "Comma-separated agent names"},
+                    "artifacts": {"type": "string", "description": "Comma-separated artifact names"},
+                },
+                "required": ["project"],
+            },
+        ))
+        self.register(Tool(
+            name="export_graphify_map",
+            description="Export a Graphify JSON payload to an allowed project path.",
+            func=lambda payload, path: export_graphify_payload(json.loads(payload), path),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "payload": {"type": "string", "description": "Graphify JSON payload"},
+                    "path": {"type": "string"},
+                },
+                "required": ["payload", "path"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_obsidian_vault",
+            description="Plan an Obsidian markdown vault with backlinks, graph-view clusters, and project notes.",
+            func=lambda project, topics="": json.dumps(
+                plan_obsidian_vault(project, [item.strip() for item in topics.split(",") if item.strip()]),
+                indent=2,
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "project": {"type": "string"},
+                    "topics": {"type": "string", "description": "Comma-separated note topics"},
+                },
+                "required": ["project"],
+            },
+        ))
+        self.register(Tool(
+            name="build_obsidian_note",
+            description="Build a markdown note with Obsidian-compatible frontmatter, tags, and wikilinks.",
+            func=lambda title, body, tags="", links="": build_obsidian_note(
+                title,
+                body,
+                [item.strip() for item in tags.split(",") if item.strip()],
+                [item.strip() for item in links.split(",") if item.strip()],
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "body": {"type": "string"},
+                    "tags": {"type": "string", "description": "Comma-separated tags"},
+                    "links": {"type": "string", "description": "Comma-separated Obsidian note links"},
+                },
+                "required": ["title", "body"],
+            },
         ))
 
     def _register_context_docs_mcp_tools(self):

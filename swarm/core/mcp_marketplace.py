@@ -120,6 +120,8 @@ MCP_MARKETPLACE: tuple[MCPMarketplaceEntry, ...] = (
     MCPMarketplaceEntry("Exa", "Research & Science", ("web_search", "code_docs")),
     MCPMarketplaceEntry("Guru", "Knowledge & Notes", ("company_knowledge",)),
     MCPMarketplaceEntry("Craft", "Knowledge & Notes", ("notes", "second_brain")),
+    MCPMarketplaceEntry("Obsidian", "Knowledge & Notes", ("markdown_vaults", "backlinks", "graph_view")),
+    MCPMarketplaceEntry("Graphify", "Knowledge & Notes", ("knowledge_graph", "visual_graph", "project_map")),
     MCPMarketplaceEntry("Klarity", "Knowledge & Notes", ("process_explorer",)),
     MCPMarketplaceEntry("ICD-10 Codes", "Healthcare", ("diagnosis_codes", "procedure_codes")),
     MCPMarketplaceEntry("NPI Registry", "Healthcare", ("provider_lookup",)),

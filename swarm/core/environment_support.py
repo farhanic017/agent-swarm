@@ -60,6 +60,8 @@ COMMON_MCP_SERVERS = {
     "supabase": "database/backend operations",
     "blender": "3D automation",
     "memory": "persistent project memory",
+    "obsidian": "markdown vaults, backlinks, and graph view notes",
+    "graphify": "knowledge graph visualization and project maps",
 }
 
 

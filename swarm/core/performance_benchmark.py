@@ -15,9 +15,12 @@ from swarm.core.context import build_compaction_summary
 from swarm.core.council import run_council_vote
 from swarm.core.dashboard import write_dashboard
 from swarm.core.docs_integration import plan_docs_for_task
+from swarm.core.file_access import assert_allowed_path, describe_file_access_policy
+from swarm.core.graphify import build_graphify_project_map
 from swarm.core.master_review import build_integration_report, run_master_review
 from swarm.core.media_apps import build_voice_workflow_plan, list_media_apps
 from swarm.core.mcp_marketplace import list_mcp_marketplace, plan_mcp_connectors
+from swarm.core.obsidian import build_obsidian_note, plan_obsidian_vault
 from swarm.core.preflight_review import review_agent_output
 from swarm.core.provider_assignment import assign_hybrid_provider_models, summarize_hybrid_routes
 from swarm.core.state import AgentTurn, SharedState
@@ -225,6 +228,28 @@ def run_feature_benchmark(config: SwarmConfig, output_dir: str | Path = "example
         }
 
     record("compact_docs_mcp_xss_support", context_docs_mcp_security_feature)
+
+    def graphify_obsidian_file_security_feature():
+        allowed = assert_allowed_path(output_root / "v5-security-probe.txt", "write", [output_root])
+        graph = build_graphify_project_map(
+            "Agent Swarm v5",
+            agents=["security", "reviewer", "coder"],
+            artifacts=["README.md", "feature_benchmark_dashboard.html"],
+        )
+        vault = plan_obsidian_vault("Agent Swarm v5", ["Architecture", "Security", "Benchmarks"])
+        note = build_obsidian_note("Security", "Scoped file tools block access outside allowed roots.", ["agent-swarm", "security"], ["Architecture"])
+        policy = describe_file_access_policy()
+        return {
+            "allowed_path": str(allowed),
+            "policy_roots": len(policy["allowed_roots"]),
+            "graph_nodes": len(graph["nodes"]),
+            "graph_edges": len(graph["edges"]),
+            "vault_notes": len(vault["notes"]),
+            "note_has_wikilink": "[[Architecture]]" in note,
+            "mcp_has_obsidian": bool(plan_mcp_connectors("obsidian graphify notes")["selected"]),
+        }
+
+    record("graphify_obsidian_secure_file_access", graphify_obsidian_file_security_feature)
 
     def switch_memory_feature():
         memory = SwitchMemory()
@@ -437,6 +462,8 @@ def _score_feature_result(feature: str, value) -> int:
         return 100 if value.get("voice_agents") and value.get("audio_apps") and value.get("plan") else 50
     if feature == "compact_docs_mcp_xss_support":
         return 100 if value.get("compact_command") == "/compact" and value.get("docs") and value.get("mcp_selected") and value.get("xss_flagged") else 50
+    if feature == "graphify_obsidian_secure_file_access":
+        return 100 if value.get("graph_nodes", 0) >= 4 and value.get("vault_notes", 0) >= 3 and value.get("note_has_wikilink") else 50
     return 90 if value else 50
 
 
