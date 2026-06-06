@@ -12,7 +12,7 @@ A production-grade, multi-agent orchestration framework. Specialized AI agents c
 
 ## Live Demo
 
-This autoplaying preview shows the swarm flow: council meeting, agent graph, live code output, provider routing, and final review.
+This autoplaying 16:9 preview shows the full swarm flow: council meeting, four pillars, agent graph, provider routing, live code output, browser/MCP/CLI support, media tools, security review, compaction, Hermes skill evolution, and final verification.
 
 ![Agent Swarm live demo](./examples/agent_swarm_live_demo.gif)
 

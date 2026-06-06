@@ -17,6 +17,12 @@ from swarm.core.dashboard import write_dashboard
 from swarm.core.docs_integration import plan_docs_for_task
 from swarm.core.file_access import assert_allowed_path, describe_file_access_policy
 from swarm.core.graphify import build_graphify_project_map
+from swarm.core.hermes_evolution import (
+    list_hermes_skills,
+    persist_hermes_skill,
+    propose_hermes_skill,
+    validate_hermes_skill,
+)
 from swarm.core.master_review import build_integration_report, run_master_review
 from swarm.core.media_apps import build_voice_workflow_plan, list_media_apps
 from swarm.core.mcp_marketplace import list_mcp_marketplace, plan_mcp_connectors
@@ -251,6 +257,27 @@ def run_feature_benchmark(config: SwarmConfig, output_dir: str | Path = "example
 
     record("graphify_obsidian_secure_file_access", graphify_obsidian_file_security_feature)
 
+    def hermes_evolution_feature():
+        proposal = propose_hermes_skill(
+            task="turn repeated dashboard QA fixes into a reusable swarm skill",
+            outcome="verified with focused tests, full tests, and warning-as-error checks",
+            lesson="capture the workflow, add regression checks, validate safety gates, and persist a versioned skill",
+            agent_name="hermes",
+        )
+        validation = validate_hermes_skill(proposal["draft"])
+        saved = persist_hermes_skill(proposal["draft"], output_root / "hermes_evolved_skills")
+        listed = list_hermes_skills(output_root / "hermes_evolved_skills")
+        return {
+            "proposal_valid": proposal["validation"]["ok"],
+            "validation_ok": validation["ok"],
+            "saved": saved["saved"],
+            "version": saved.get("version"),
+            "listed": len(listed),
+            "skill_name": proposal["draft"]["name"],
+        }
+
+    record("hermes_self_evolution_skill_creation", hermes_evolution_feature)
+
     def switch_memory_feature():
         memory = SwitchMemory()
         context = "fix bug; completed step 1; artifact file=x.py"
@@ -464,6 +491,8 @@ def _score_feature_result(feature: str, value) -> int:
         return 100 if value.get("compact_command") == "/compact" and value.get("docs") and value.get("mcp_selected") and value.get("xss_flagged") else 50
     if feature == "graphify_obsidian_secure_file_access":
         return 100 if value.get("graph_nodes", 0) >= 4 and value.get("vault_notes", 0) >= 3 and value.get("note_has_wikilink") else 50
+    if feature == "hermes_self_evolution_skill_creation":
+        return 100 if value.get("proposal_valid") and value.get("validation_ok") and value.get("saved") and value.get("listed", 0) >= 1 else 50
     return 90 if value else 50
 
 

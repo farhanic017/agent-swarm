@@ -62,6 +62,7 @@ def test_feature_benchmark_covers_swarm_capabilities(tmp_path):
         "smart_ai_selection_hybrid_routing",
         "always_on_council_voting",
         "ab_testing_winner_and_alternative",
+        "hermes_self_evolution_skill_creation",
         "real_time_dashboard_export",
     }
 
