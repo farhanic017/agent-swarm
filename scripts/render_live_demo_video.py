@@ -19,6 +19,8 @@ HEIGHT = 720
 FPS = 15
 DURATION = 60
 TOTAL_FRAMES = FPS * DURATION
+PLAYBACK_SPEED = 2.2
+ENCODE_FPS = FPS * PLAYBACK_SPEED
 
 BG = (8, 13, 23)
 PANEL = (17, 24, 39)
@@ -507,7 +509,7 @@ def render_mp4():
         "-s",
         f"{WIDTH}x{HEIGHT}",
         "-r",
-        str(FPS),
+        f"{ENCODE_FPS:g}",
         "-i",
         "-",
         "-an",
