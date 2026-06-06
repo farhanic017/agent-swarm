@@ -136,5 +136,5 @@ def test_benchmark_chart_renderer_writes_pngs(tmp_path):
 
     charts = render_benchmark_charts(report, tmp_path)
 
-    assert set(charts) == {"swarm_vs_single", "requested_models", "cli_matrix"}
+    assert set(charts) == {"swarm_vs_single", "requested_models", "cli_matrix", "coding_models"}
     assert all(Path(path).exists() for path in charts.values())

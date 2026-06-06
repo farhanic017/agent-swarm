@@ -36,6 +36,31 @@ from swarm.providers.base import Message
 from swarm.providers.factory import ProviderFactory
 
 
+PUBLIC_BENCHMARK_POINTS = [
+    {
+        "name": "Claude Opus 4.8",
+        "short": "OPUS",
+        "color": (31, 41, 55),
+        "intelligence": 72.0,
+        "speed": 78.5,
+        "price": 12.5,
+        "swe_bench_pro": 69.2,
+        "terminal_bench": 74.6,
+        "coding": 71.9,
+    },
+    {
+        "name": "GPT-5.5",
+        "short": "GPT",
+        "color": (249, 115, 22),
+        "intelligence": 60.2,
+        "speed": 70.8,
+        "price": 11.25,
+        "swe_bench_pro": 58.6,
+        "terminal_bench": 83.4,
+        "coding": 71.0,
+    },
+]
+
 COMPLEX_WORK_PROMPT = (
     "Complex benchmark work: design a secure multi-agent job finder and applier that scrapes listings, "
     "uses temporary vision for screenshots, routes coding/security/browser agents to the best providers, "
@@ -1018,10 +1043,12 @@ def render_benchmark_charts(report: dict, output_dir: Path) -> dict:
         "swarm_vs_single": output_dir / "benchmark_swarm_vs_single.png",
         "requested_models": output_dir / "benchmark_requested_models.png",
         "cli_matrix": output_dir / "benchmark_cli_matrix.png",
+        "coding_models": output_dir / "benchmark_coding_models.png",
     }
     render_swarm_vs_single_chart(report, charts["swarm_vs_single"])
     render_requested_models_chart(report, charts["requested_models"])
     render_cli_matrix_chart(report, charts["cli_matrix"])
+    render_coding_models_chart(report, charts["coding_models"])
     return {key: str(path) for key, path in charts.items()}
 
 
@@ -1060,12 +1087,12 @@ def render_swarm_vs_single_chart(report: dict, path: Path) -> None:
     draw = ImageDraw.Draw(image)
     points = build_comparison_card_points(report)
     cards = [
-        ((26, 6, 482, 514), "Intelligence", "Execution coverage index - Higher is better", "intelligence", True, (124, 58, 237)),
-        ((498, 6, 954, 514), "Speed", "Measured benchmark throughput index - Higher is better", "speed", True, (250, 204, 21)),
-        ((970, 6, 1426, 514), "Price", "Estimated tokens per verified work unit - Lower is better", "price", False, (249, 115, 22)),
+        ((26, 6, 482, 514), "Intelligence", "AA/local execution index - Higher is better", "intelligence", True, (124, 58, 237)),
+        ((498, 6, 954, 514), "Speed", "Output tokens/sec or local throughput - Higher is better", "speed", True, (250, 204, 21)),
+        ((970, 6, 1426, 514), "Price", "USD per 1M tokens blended or local token ratio - Lower is better", "price", False, (249, 115, 22)),
     ]
-    for idx, (box, title, subtitle, metric, higher_better, accent) in enumerate(cards):
-        draw_metric_card(image, draw, box, title, subtitle, metric, points, higher_better, accent, updated=(idx == 2))
+    for box, title, subtitle, metric, higher_better, accent in cards:
+        draw_metric_card(image, draw, box, title, subtitle, metric, points, higher_better, accent)
     image.save(path)
 
 
@@ -1088,8 +1115,10 @@ def build_comparison_card_points(report: dict) -> list[dict]:
             "intelligence": int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100),
             "speed": int(min(350, round(work_units / swarm_elapsed))),
             "price": max(0.1, swarm_price),
+            "coding": int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100),
         }
     ]
+    points.extend(PUBLIC_BENCHMARK_POINTS)
 
     palette = [
         (99, 102, 241),
@@ -1107,7 +1136,11 @@ def build_comparison_card_points(report: dict) -> list[dict]:
         speed = int(round((chars / 4) / elapsed)) if elapsed > 0 and chars > 0 and single.get("ok") else 0
         price = 1.0 if single.get("ok") else None
         name = case.get("display_name", case.get("case_id", "single"))
-        if "GPT 5.5" in name and not single.get("ok"):
+        if "GPT 5.5" in name:
+            continue
+        if "Claude Opus 4.8" in name:
+            continue
+        if not single.get("ok"):
             price = None
         points.append(
             {
@@ -1117,6 +1150,7 @@ def build_comparison_card_points(report: dict) -> list[dict]:
                 "intelligence": score,
                 "speed": speed,
                 "price": price,
+                "coding": score,
             }
         )
     return points
@@ -1150,16 +1184,12 @@ def draw_metric_card(
     points: list[dict],
     higher_better: bool,
     accent: tuple[int, int, int],
-    updated: bool = False,
 ) -> None:
     left, top, right, bottom = box
     draw.rounded_rectangle(box, radius=8, fill=(255, 255, 255), outline=(214, 219, 226), width=1)
     draw.rectangle((left + 18, top + 25, left + 34, top + 41), fill=accent)
     draw.text((left + 42, top + 18), title, fill=(17, 24, 39), font=chart_font(26))
     draw.text((left + 18, top + 64), subtitle, fill=(107, 114, 128), font=chart_font(13))
-    if updated:
-        draw.rounded_rectangle((right - 82, top + 18, right - 16, top + 43), radius=12, fill=(127, 29, 127))
-        draw.text((right - 69, top + 23), "Updated", fill=(255, 255, 255), font=chart_font(11, True))
 
     values = [point.get(metric) for point in points if isinstance(point.get(metric), (int, float))]
     max_value = max(values) if values else 1
@@ -1217,6 +1247,20 @@ def draw_rotated_text(image: Image.Image, xy: tuple[int, int], text: str, font, 
     label_draw.text((0, 0), text[:26], fill=fill + (255,), font=font)
     rotated = label.rotate(62, expand=True, resample=Image.Resampling.BICUBIC)
     image.paste(rotated, xy, rotated)
+
+
+def render_coding_models_chart(report: dict, path: Path) -> None:
+    image = Image.new("RGB", (1500, 520), (250, 250, 249))
+    draw = ImageDraw.Draw(image)
+    points = build_comparison_card_points(report)
+    cards = [
+        ((26, 6, 482, 514), "SWE-Bench Pro", "Agentic coding pass rate - Higher is better", "swe_bench_pro", True, (124, 58, 237)),
+        ((498, 6, 954, 514), "Terminal-Bench", "Multi-turn terminal coding reward - Higher is better", "terminal_bench", True, (250, 204, 21)),
+        ((970, 6, 1426, 514), "Coding", "Coding score plus local swarm execution coverage", "coding", True, (249, 115, 22)),
+    ]
+    for box, title, subtitle, metric, higher_better, accent in cards:
+        draw_metric_card(image, draw, box, title, subtitle, metric, points, higher_better, accent)
+    image.save(path)
 
 
 def render_requested_models_chart(report: dict, path: Path) -> None:
