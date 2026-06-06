@@ -47,6 +47,8 @@ def build_integration_report(state: SharedState) -> IntegrationReport:
         parts.append("ab_test")
     if state.get_artifact("ai_selection"):
         parts.append("ai_selection")
+    if state.get_artifact("preflight_reviews"):
+        parts.append("preflight_reviews")
     if state.agent_turns:
         parts.append("agent_outputs")
     if state.artifacts:
@@ -78,11 +80,14 @@ def run_master_review(state: SharedState) -> MasterReview:
         for turn in state.agent_turns
         if isinstance(turn.output, str) and turn.output.startswith("[ALL MODELS FAILED]")
     ]
+    preflight_reviews = state.get_artifact("preflight_reviews") or state.metadata.get("preflight_reviews", [])
+    preflight_comments = state.get_artifact("pr_inline_comments") or state.metadata.get("pr_inline_comments", [])
     checks = {
         "council_completed": bool(council),
         "council_proceeded": council.get("verdict") in (None, "proceed"),
         "parts_connected": bool(integration.get("connected_parts")),
         "no_model_failures": not errors,
+        "preflight_reviews_passed": not preflight_comments and all(item.get("passed", True) for item in preflight_reviews),
         "loop_free": not state.metadata.get("loop_detected", False),
     }
     risks = []
@@ -92,6 +97,8 @@ def run_master_review(state: SharedState) -> MasterReview:
         risks.append("missing parts: " + ", ".join(integration["missing_parts"]))
     if state.metadata.get("loop_detected"):
         risks.append("handoff loop was detected")
+    if preflight_comments:
+        risks.append(f"{len(preflight_comments)} preflight inline comment(s) must be fixed before integration")
 
     passed = sum(1 for ok in checks.values() if ok)
     confidence = int(round((passed / max(1, len(checks))) * 100))

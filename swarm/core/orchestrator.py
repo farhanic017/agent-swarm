@@ -19,10 +19,13 @@ from swarm.core.council import run_council_vote
 from swarm.core.debug_collab import DebugCollaboration
 from swarm.core.learning import LessonLearner
 from swarm.core.master_review import build_integration_report, run_master_review
+from swarm.core.preflight_review import review_agent_output
 from swarm.core.provider_assignment import assign_hybrid_provider_models, summarize_hybrid_routes
 from swarm.core.sub_agent_planner import build_sub_agent_plan
 from swarm.core.switch_memory import SwitchMemory
+from swarm.core.skill_runtime import create_temporary_skill_session, plan_required_skills
 from swarm.core.token_budget import build_token_budget_plan, should_stop_for_budget
+from swarm.core.environment_support import discover_environment_support
 from swarm.tools.react_doctor_monitor import ReactDoctorMonitor
 from swarm.config import SwarmConfig
 from swarm.providers.base import Message
@@ -62,6 +65,7 @@ class Orchestrator:
         self.brainstorm_engine = BrainstormEngine()
         self.debug_collab = DebugCollaboration()
         self.lesson_learner = LessonLearner()
+        self.temp_skill_session = create_temporary_skill_session()
         self.switcher_bridge = SwitcherBridge(consciousness=self.consciousness)
         self.react_doctor = ReactDoctorMonitor(
             publish_fn=self.consciousness.push_diagnostic,
@@ -226,6 +230,16 @@ class Orchestrator:
     def _get_tools_for_agent(self, agent: Agent) -> list[Tool]:
         agent_tools = getattr(agent, "tools", [])
         return self.tool_registry.get_tools_for_agent(agent.name, agent_tools)
+
+    async def _review_agent_turn(self, state: SharedState, agent: Agent, output: str):
+        review = review_agent_output(agent.name, output, path=f"agents/{agent.name}.md")
+        state.metadata.setdefault("preflight_reviews", []).append(review.to_dict())
+        if review.comments:
+            state.metadata.setdefault("pr_inline_comments", []).extend(
+                [comment.to_dict() for comment in review.comments]
+            )
+            await self.consciousness.push_diagnostic(agent.name, review.summary, review.to_dict())
+        return review
 
     async def _execute_tool_calls(
         self,
@@ -438,6 +452,7 @@ class Orchestrator:
                     duration_ms=0,
                 )
                 state.add_turn(turn)
+                await self._review_agent_turn(state, agent, output)
 
                 await self.consciousness.push_completion(
                     agent_name, output, f"Completed via {model_ref}"
@@ -511,6 +526,14 @@ class Orchestrator:
             state.metadata["ai_selection"],
             "orchestrator",
         )
+        state.metadata["environment_support"] = discover_environment_support()
+        state.set_artifact("environment_support", state.metadata["environment_support"])
+        skill_plan = plan_required_skills(user_input, existing_skills=[])
+        state.metadata["skill_plan"] = skill_plan
+        state.set_artifact("skill_plan", skill_plan)
+        for skill_name in skill_plan["required"]:
+            self.temp_skill_session.install_manifest(skill_name)
+        await self.consciousness.push_state("skill_plan", skill_plan, "orchestrator")
 
         if council:
             council_agents = list(self.agents.values())
@@ -541,6 +564,7 @@ class Orchestrator:
                 state.metadata["total_iterations"] = state.iteration
                 state.metadata["total_tokens"] = 0
                 state.metadata["total_duration_ms"] = 0
+                state.metadata["temporary_skill_cleanup"] = self.temp_skill_session.cleanup()
                 return state
 
         ab_agents = list(self.agents.values())[: min(8, len(self.agents))]
@@ -645,6 +669,7 @@ class Orchestrator:
                     duration_ms=int((time.monotonic() - start_time) * 1000),
                 )
                 state.add_turn(turn)
+                await self._review_agent_turn(state, agent, turn.output)
                 consecutive_failures += 1
                 if consecutive_failures >= 2:
                     self._log("Two consecutive agent failures. Aborting.")
@@ -669,6 +694,7 @@ class Orchestrator:
                 tool_calls=tool_calls,
             )
             state.add_turn(turn)
+            await self._review_agent_turn(state, agent, agent_output)
             running_tokens = sum(t.tokens_used for t in state.agent_turns)
             if should_stop_for_budget(running_tokens, token_budget):
                 state.metadata["budget_stopped"] = True
@@ -751,6 +777,8 @@ class Orchestrator:
             t.duration_ms for t in state.agent_turns
         )
         state.metadata["switch_memory"] = self.switch_memory.to_dict()
+        state.set_artifact("preflight_reviews", state.metadata.get("preflight_reviews", []))
+        state.set_artifact("pr_inline_comments", state.metadata.get("pr_inline_comments", []))
         integration_report = build_integration_report(state)
         state.set_artifact("integration_report", integration_report.to_dict())
         await self.consciousness.push_artifact(
@@ -778,6 +806,7 @@ class Orchestrator:
             success=master_review.status == "pass",
         )
         state.metadata["learning_stats"] = self.lesson_learner.get_stats()
+        state.metadata["temporary_skill_cleanup"] = self.temp_skill_session.cleanup()
 
         if verbose:
             total_tokens = state.metadata["total_tokens"]

@@ -29,6 +29,7 @@ def test_requested_business_and_creative_agents_exist():
         "prompt_generator",
         "trading",
         "sales",
+        "ai_reviewer",
     }
     assert required.issubset(agents)
     assert agents["photo_editor"].task_type == "image_generation"
@@ -38,6 +39,7 @@ def test_requested_business_and_creative_agents_exist():
     assert agents["prompt_generator"].pillar == "design"
     assert "browser_open" in agents["figma_controller"].tools
     assert "browser_snapshot" in agents["testing"].tools
+    assert "preflight_review_agent_work" in agents["ai_reviewer"].tools
 
 
 def test_agents_have_model_preferences_and_sub_agent_roles():

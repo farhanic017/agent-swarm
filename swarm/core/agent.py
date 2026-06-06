@@ -31,6 +31,7 @@ AGENT_TASK_MAP = {
     "text_editor": "chat",
     "prompt_generator": "chat",
     "reviewer": "coding",
+    "ai_reviewer": "coding",
     "security": "coding",
     "testing": "coding",
     "debugging": "coding",
@@ -44,8 +45,8 @@ AGENT_TASK_MAP = {
     "product_manager": "reasoning",
     "sales": "chat",
     "design": "chat",
-    "photo_editor": "vision",
-    "video_editor": "vision",
+    "photo_editor": "image_generation",
+    "video_editor": "video_generation",
     "figma_controller": "vision",
     "council_master": "reasoning",
 }

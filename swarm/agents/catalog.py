@@ -44,6 +44,14 @@ CODE_TOOLS = (
     "run_react_doctor",
 )
 
+REVIEW_TOOLS = (
+    "preflight_review_agent_work",
+    "format_pr_inline_comments",
+    "run_react_doctor",
+    "read_file",
+    "list_directory",
+)
+
 RESEARCH_TOOLS = ("search_web", "read_file", "list_directory")
 BROWSER_TOOLS = (
     "browser_open",
@@ -64,6 +72,7 @@ AGENT_MODEL_PREFERENCES = {
     "triage": "best",
     "coder": "coding",
     "reviewer": "coding",
+    "ai_reviewer": "coding",
     "security": "reasoning",
     "testing": "coding",
     "debugging": "coding",
@@ -78,7 +87,8 @@ AGENT_MODEL_PREFERENCES = {
 AGENT_SUB_AGENT_ROLES = {
     "triage": ("researcher", "product_manager", "council_master"),
     "coder": ("testing", "security", "reviewer", "debugging"),
-    "reviewer": ("testing", "security", "coder"),
+    "reviewer": ("ai_reviewer", "testing", "security", "coder"),
+    "ai_reviewer": ("security", "testing", "debugging", "coder"),
     "security": ("testing", "debugging", "legal"),
     "testing": ("debugging", "coder", "reviewer"),
     "debugging": ("testing", "coder", "security"),
@@ -108,6 +118,7 @@ AGENT_SPECS: tuple[AgentSpec, ...] = (
     AgentSpec("researcher", "Research Agent", "see", "core", "Researches facts, sources, markets, and prior art.", ("source discovery", "evidence synthesis", "conflict checks", "browser inspection"), RESEARCH_TOOLS + BROWSER_TOOLS + COMMON_COLLAB_TOOLS, 0.3, "reasoning"),
     AgentSpec("coder", "Coding Agent", "code", "coding", "Builds features, refactors code, and writes implementation notes.", ("implementation", "refactoring", "integration"), CODE_TOOLS + COMMON_COLLAB_TOOLS, 0.2, "coding"),
     AgentSpec("reviewer", "Reviewer Agent", "code", "coding", "Reviews quality, correctness, and release readiness.", ("code review", "risk review", "acceptance checks"), CODE_TOOLS + COMMON_COLLAB_TOOLS, 0.15, "coding"),
+    AgentSpec("ai_reviewer", "AI Reviewer Agent", "code", "coding", "Reviews every individual agent output before integration, posts PR inline comment payloads, and sends fixes back to the responsible agent.", ("security vulnerability review", "performance review", "logic error review", "PR inline comments", "pre-integration debugging"), REVIEW_TOOLS + COMMON_COLLAB_TOOLS, 0.1, "coding"),
     AgentSpec("writer", "Writer Agent", "design", "creative", "Creates user-facing copy, docs, and summaries.", ("documentation", "release notes", "narrative"), COMMON_COLLAB_TOOLS, 0.35, "chat"),
     AgentSpec("text_editor", "Text Editor Agent", "design", "creative", "Edits, rewrites, proofreads, and adapts text while preserving intent.", ("line editing", "tone rewrite", "proofreading", "summarization"), COMMON_COLLAB_TOOLS, 0.25, "chat"),
     AgentSpec("prompt_generator", "Prompt Generation Agent", "design", "creative", "Creates concise, reusable prompts for text, image, video, design, browser, and coding agents.", ("prompt design", "negative prompts", "style prompts", "test prompts"), COMMON_COLLAB_TOOLS, 0.3, "chat"),

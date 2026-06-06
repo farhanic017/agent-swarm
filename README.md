@@ -3,7 +3,7 @@
 [![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
-![tests: 257 passed](https://img.shields.io/badge/tests-257%20passed-16a34a)
+![tests: 264 passed](https://img.shields.io/badge/tests-264%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -106,8 +106,13 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 - **OpenClaw support** detects `OPENCLAW_BASE_URL` or `OPENCLAW_ENDPOINT`, optional `OPENCLAW_API_KEY`, and `OPENCLAW_MODEL`, then routes OpenClaw as an OpenAI-compatible `agent_gateway`.
 - **Hermes support** recognizes Hermes/Nous model names as chat+reasoning capable options for writing, analytics, council, and planning work.
 - **Per-agent sub-agents** are built in. Each specialist has default helper roles and access to the `spawn_agent` tool for delegating focused work when needed.
+- **AI Reviewer Agent** reviews every individual agent output before integration for security vulnerabilities, performance issues, and logic errors. It produces GitHub PR inline comment payloads and routes fixes back to the responsible agent before the master connects the project parts.
 - **Text, image, video, and prompt agents** are first-class roles. The swarm includes text editing, prompt generation, image generation/editing, video generation/editing, Figma/design control, and browser prototype checks.
 - **Image and video generation model support** routes configured `image_generation` and `video_generation` models through provider adapters. OpenAI, Azure OpenAI/Foundry-style endpoints, and OpenAI-compatible media gateways can expose `images/generations` and configurable video generation routes.
+- **Mockup video support** plans storyboard, generated/imported assets, motion, render preview, and export with draft-resolution guardrails.
+- **Photo/video app adapter registry** covers Adobe Photoshop, Lightroom, Illustrator, Premiere Pro, After Effects, Media Encoder, DaVinci Resolve, CapCut, Final Cut Pro, Blender, Figma, Canva, GIMP, Krita, Affinity tools, Runway, Pika, Kling, Stable Diffusion, and ComfyUI.
+- **Temporary skill acquisition** plans missing work skills, installs run-scoped skill manifests, injects them into the swarm, and deletes temporary downloads after all agents complete.
+- **Local model, CLI, MCP, and IDE support discovery** detects Ollama, LM Studio, vLLM, llama.cpp, Jan, KoboldCPP, text-generation-webui, LocalAI, Codex, OpenCode, Mistral Vibe, Claude Code, Gemini/Qwen CLIs, Aider, Cursor, Windsurf, VS Code, Zed, JetBrains surfaces, and common MCP servers.
 - **Token budget guardrails** estimate a single-agent run and cap the default swarm run to a small bounded overhead, with max iterations and parallel-agent limits derived from that budget.
 - **Browser control tools** expose `browser_open`, `browser_snapshot`, `browser_click`, `browser_get_title`, and `browser_stop` through the tool registry for agents that need web or prototype testing.
 - **Full agent communication mesh** comes online at the start of every run. Agents can use direct messages, broadcasts, shared artifacts, and live consciousness updates so every specialist can coordinate with every other specialist.
@@ -201,6 +206,26 @@ video = await video_func(MediaGenerationRequest(
 | OpenAI-compatible gateway | `/images/generations` | `/videos/generations` by default, override with `extra.path` |
 
 The `photo_editor` agent prefers `image_generation` models and the `video_editor` agent prefers `video_generation` models. If no generator is configured, normal vision/chat fallback still applies through the model switcher.
+
+## Pre-Integration AI Review
+
+Before the master agent connects agent outputs together, each individual agent turn is scanned by the AI Reviewer pipeline:
+
+1. **Security review** checks for hardcoded secrets, unsafe shell execution, unsafe `eval`/`exec`, and simple injection patterns.
+2. **Performance review** checks for obvious unbounded loops, nested-loop hot spots, and synchronous network work inside loops.
+3. **Logic review** checks for bare `except`, mutable default arguments, and fragile `None` comparisons.
+4. **PR comments** are generated as GitHub inline-review payloads with file path, line, side, body, severity, category, and agent name.
+5. **Fix routing** creates a focused fix prompt for the responsible agent before integration.
+
+The master review fails if unresolved preflight inline comments remain, so problems are caught before separately built pieces are connected.
+
+## Skills, Apps, Local Models & IDEs
+
+- **Temporary skills:** `plan_temporary_skills` determines missing skills for browser, Figma, media, Blender, security, performance, and MCP work. Temporary skills are removed after the swarm finishes.
+- **Media apps:** `list_media_app_adapters` exposes adapter metadata for Adobe apps, DaVinci Resolve, CapCut, Blender, Figma, Canva, GIMP, Krita, Affinity, Runway, Pika, Kling, Stable Diffusion, and ComfyUI.
+- **Mockups:** `plan_mockup_video` creates a low-lag mockup video workflow with 720p draft previews, 24 fps draft renders, and final render approval.
+- **Environment discovery:** `discover_environment_support` checks local model runtimes, CLI agents, IDE agents, and MCP server categories without blocking on missing tools.
+- **Lag/token controls:** model fallback cooldowns, replacement-model memory, bounded model chains, max iterations, max parallel agents, and token budget caps keep agents from getting stuck or exploding token usage.
 
 ## Custom Agents
 
@@ -311,7 +336,15 @@ agent-swarm/
 
 ## Version History
 
-### v2 (Current) - Media Generation & Provider Hardening
+### v3 (Current) - Preflight AI Review, Skills, Apps & Local Runtime Support
+- Added dedicated `ai_reviewer` agent for per-agent security, performance, and logic review before integration.
+- Added GitHub PR inline comment payload generation and master-review blocking for unresolved preflight issues.
+- Added mockup video planning and broad photo/video/design app adapter registry including Adobe, DaVinci Resolve, CapCut, Blender, Figma, Stable Diffusion, ComfyUI, Runway, Pika, and Kling.
+- Added temporary skill planning, run-scoped skill install manifests, and automatic cleanup after agents finish.
+- Added local model runtime, CLI agent, IDE agent, and MCP support discovery.
+- Added smoother token/lag guardrails through deterministic preflight checks, bounded discovery, cooldown-aware model fallback, and cleanup.
+
+### v2 - Media Generation & Provider Hardening
 - Added image generation and video generation request/response types.
 - Added OpenAI, Azure OpenAI/Foundry, and OpenAI-compatible media generation routes.
 - Added media model discovery for `image_generation` and `video_generation` preferences.

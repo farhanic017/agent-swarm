@@ -12,6 +12,10 @@ from swarm.core.messaging import MessageHub
 from swarm.core.brainstorm import BrainstormEngine
 from swarm.core.debug_collab import DebugCollaboration
 from swarm.core.learning import LessonLearner
+from swarm.core.preflight_review import review_agent_output, format_github_review_comments
+from swarm.core.media_apps import list_media_apps, build_mockup_video_plan
+from swarm.core.skill_runtime import plan_required_skills
+from swarm.core.environment_support import discover_environment_support
 
 
 class ToolRegistry:
@@ -148,6 +152,9 @@ class ToolRegistry:
         registry._register_mcp_tool_stubs()
         registry._register_graph_tools()
         registry._register_browser_tools()
+        registry._register_preflight_review_tools()
+        registry._register_media_app_tools()
+        registry._register_environment_tools()
 
         return registry
 
@@ -327,6 +334,93 @@ class ToolRegistry:
                 },
                 "required": ["server", "tool"],
             },
+        ))
+
+    def _register_preflight_review_tools(self):
+        def _review(agent_name: str, output: str, path: str = "agent-output.md"):
+            return json.dumps(review_agent_output(agent_name, output, path).to_dict(), indent=2)
+
+        def _comments(agent_name: str, output: str, path: str = "agent-output.md", commit_id: str = ""):
+            result = review_agent_output(agent_name, output, path)
+            return json.dumps(format_github_review_comments(result, commit_id), indent=2)
+
+        self.register(Tool(
+            name="preflight_review_agent_work",
+            description="Review one agent's work for security vulnerabilities, performance issues, and logic errors before integration.",
+            func=_review,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "agent_name": {"type": "string"},
+                    "output": {"type": "string"},
+                    "path": {"type": "string"},
+                },
+                "required": ["agent_name", "output"],
+            },
+        ))
+        self.register(Tool(
+            name="format_pr_inline_comments",
+            description="Convert a preflight review into GitHub pull request inline comment payloads.",
+            func=_comments,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "agent_name": {"type": "string"},
+                    "output": {"type": "string"},
+                    "path": {"type": "string"},
+                    "commit_id": {"type": "string"},
+                },
+                "required": ["agent_name", "output"],
+            },
+        ))
+
+    def _register_media_app_tools(self):
+        self.register(Tool(
+            name="list_media_app_adapters",
+            description="List supported photo, video, mockup, Adobe, DaVinci Resolve, CapCut, Figma, Blender, and AI media app adapters.",
+            func=lambda category=None: json.dumps(list_media_apps(category), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"category": {"type": "string"}},
+                "required": [],
+            },
+        ))
+        self.register(Tool(
+            name="plan_mockup_video",
+            description="Create a lightweight mockup video workflow using supported video, motion, 3D, or AI media apps.",
+            func=lambda prompt, app="auto": json.dumps(build_mockup_video_plan(prompt, app), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string"},
+                    "app": {"type": "string"},
+                },
+                "required": ["prompt"],
+            },
+        ))
+
+    def _register_environment_tools(self):
+        self.register(Tool(
+            name="plan_temporary_skills",
+            description="Plan temporary skills to download/use for a task, with cleanup after agents finish.",
+            func=lambda task, existing_skills="": json.dumps(
+                plan_required_skills(task, [s.strip() for s in existing_skills.split(",") if s.strip()]),
+                indent=2,
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string"},
+                    "existing_skills": {"type": "string"},
+                },
+                "required": ["task"],
+            },
+        ))
+        self.register(Tool(
+            name="discover_environment_support",
+            description="Detect local model runtimes, CLI agents, IDE agents, and common MCP support without blocking on unavailable tools.",
+            func=lambda: json.dumps(discover_environment_support(), indent=2),
+            parameters={"type": "object", "properties": {}, "required": []},
         ))
 
     def _register_graph_tools(self):
