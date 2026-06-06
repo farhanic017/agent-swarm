@@ -47,6 +47,8 @@ AGENT_TASK_MAP = {
     "design": "chat",
     "photo_editor": "image_generation",
     "video_editor": "video_generation",
+    "voice_transcriber": "speech_to_text",
+    "voice_generator": "text_to_speech",
     "figma_controller": "vision",
     "council_master": "reasoning",
 }

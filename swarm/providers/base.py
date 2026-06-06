@@ -42,6 +42,36 @@ class MediaGenerationResponse:
     raw: dict = field(default_factory=dict)
 
 
+@dataclass
+class AudioTranscriptionRequest:
+    audio_path: str
+    model: Optional[str] = None
+    language: Optional[str] = None
+    prompt: Optional[str] = None
+    response_format: Optional[str] = None
+    extra: dict = field(default_factory=dict)
+
+
+@dataclass
+class AudioSpeechRequest:
+    text: str
+    model: Optional[str] = None
+    voice: Optional[str] = None
+    output_format: Optional[str] = None
+    speed: Optional[float] = None
+    extra: dict = field(default_factory=dict)
+
+
+@dataclass
+class AudioResponse:
+    kind: str
+    model: str
+    provider: str
+    text: str = ""
+    assets: list[dict] = field(default_factory=list)
+    raw: dict = field(default_factory=dict)
+
+
 class ToolDef:
     def __init__(self, name: str, description: str, parameters: dict):
         self.name = name
@@ -95,3 +125,9 @@ class LLMProvider(ABC):
 
     async def generate_video(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
         raise NotImplementedError(f"{self.__class__.__name__} does not support video generation")
+
+    async def transcribe_audio(self, request: AudioTranscriptionRequest) -> AudioResponse:
+        raise NotImplementedError(f"{self.__class__.__name__} does not support speech-to-text")
+
+    async def synthesize_speech(self, request: AudioSpeechRequest) -> AudioResponse:
+        raise NotImplementedError(f"{self.__class__.__name__} does not support text-to-speech")

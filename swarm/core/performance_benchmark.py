@@ -14,6 +14,7 @@ from swarm.core.ab_testing import run_ab_test
 from swarm.core.council import run_council_vote
 from swarm.core.dashboard import write_dashboard
 from swarm.core.master_review import build_integration_report, run_master_review
+from swarm.core.media_apps import build_voice_workflow_plan, list_media_apps
 from swarm.core.provider_assignment import assign_hybrid_provider_models, summarize_hybrid_routes
 from swarm.core.state import AgentTurn, SharedState
 from swarm.core.sub_agent_planner import build_sub_agent_plan
@@ -190,6 +191,19 @@ def run_feature_benchmark(config: SwarmConfig, output_dir: str | Path = "example
         "sub_agent_planning",
         lambda: _benchmark_sub_agent_planning(agents),
     )
+
+    def voice_feature():
+        voice_agents = [agent.name for agent in agents if agent.model_preference in {"speech_to_text", "text_to_speech"}]
+        audio_apps = list_media_apps("audio")
+        return {
+            "voice_agents": voice_agents,
+            "speech_to_text_model": config.get_best_speech_to_text_model(),
+            "text_to_speech_model": config.get_best_text_to_speech_model(),
+            "audio_apps": [app["name"] for app in audio_apps],
+            "plan": build_voice_workflow_plan("benchmark voice transcription and narration", "speech_to_text"),
+        }
+
+    record("voice_to_text_and_speech_support", voice_feature)
 
     def switch_memory_feature():
         memory = SwitchMemory()
@@ -398,6 +412,8 @@ def _score_feature_result(feature: str, value) -> int:
         return 100 if value.get("winner") and value.get("loser") and value.get("winner") != value.get("loser") else 60
     if feature == "real_time_dashboard_export":
         return 100 if value.get("exists") and value.get("bytes", 0) > 10_000 else 60
+    if feature == "voice_to_text_and_speech_support":
+        return 100 if value.get("voice_agents") and value.get("audio_apps") and value.get("plan") else 50
     return 90 if value else 50
 
 

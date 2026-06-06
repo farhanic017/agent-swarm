@@ -7,10 +7,12 @@ from swarm.providers.openrouter import OpenRouterProvider
 from swarm.providers.google import GoogleProvider
 from swarm.providers.anthropic import AnthropicProvider
 from swarm.providers.openai_compatible import OpenAICompatibleProvider
+from swarm.providers.elevenlabs import ElevenLabsProvider
 
 
 OPENAI_COMPATIBLE_ENDPOINTS = {
     "openclaw": "http://localhost:7331/v1",
+    "manus": "https://api.manus.im/v1",
     "groq": "https://api.groq.com/openai/v1",
     "together": "https://api.together.xyz/v1",
     "perplexity": "https://api.perplexity.ai",
@@ -41,6 +43,8 @@ def _build_provider(normalized: str, api_key: str, endpoint: str = None, models:
     elif normalized == "openclaw":
         ep = endpoint or OPENAI_COMPATIBLE_ENDPOINTS[normalized]
         return OpenAICompatibleProvider(api_key=api_key, endpoint=ep, provider_name=normalized)
+    elif normalized == "elevenlabs":
+        return ElevenLabsProvider(api_key=api_key, endpoint=endpoint or "https://api.elevenlabs.io/v1")
     elif normalized in OPENAI_COMPATIBLE_ENDPOINTS:
         ep = endpoint or OPENAI_COMPATIBLE_ENDPOINTS[normalized]
         return OpenAICompatibleProvider(api_key=api_key, endpoint=ep, provider_name=normalized)
@@ -140,6 +144,40 @@ class ProviderFactory:
             return await provider.generate_video(request)
 
         return video_func
+
+    @classmethod
+    def get_transcription_func(cls, config: SwarmConfig, model_ref: str):
+        provider = cls.get_provider(config, model_ref)
+        if provider is None:
+            raise RuntimeError(
+                f"No provider available for speech-to-text model '{model_ref}'. "
+                "Check your API keys and configuration."
+            )
+
+        async def transcription_func(request):
+            if ":" in model_ref and not request.model:
+                _, model_name = model_ref.split(":", 1)
+                request.model = model_name
+            return await provider.transcribe_audio(request)
+
+        return transcription_func
+
+    @classmethod
+    def get_speech_func(cls, config: SwarmConfig, model_ref: str):
+        provider = cls.get_provider(config, model_ref)
+        if provider is None:
+            raise RuntimeError(
+                f"No provider available for text-to-speech model '{model_ref}'. "
+                "Check your API keys and configuration."
+            )
+
+        async def speech_func(request):
+            if ":" in model_ref and not request.model:
+                _, model_name = model_ref.split(":", 1)
+                request.model = model_name
+            return await provider.synthesize_speech(request)
+
+        return speech_func
 
     @classmethod
     def _find_any_provider(cls, config: SwarmConfig) -> Optional[LLMProvider]:

@@ -3,7 +3,7 @@
 [![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
-![tests: 264 passed](https://img.shields.io/badge/tests-264%20passed-16a34a)
+![tests: 269 passed](https://img.shields.io/badge/tests-269%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -28,7 +28,7 @@ User Input → [Triage Agent] → [Researcher] → [Writer] → [Reviewer]
 
 | Layer | Components | Purpose |
 |-------|-----------|---------|
-| **Providers** | Azure, OpenRouter, Google, OpenAI, Anthropic, OpenClaw, OpenAI-compatible gateways | Abstracts LLM APIs and agent gateways behind unified interface |
+| **Providers** | Azure, OpenRouter, Google, OpenAI, Anthropic, OpenClaw, Manus, ElevenLabs, OpenAI-compatible gateways | Abstracts LLM, media, voice, and agent-gateway APIs behind unified interface |
 | **Core** | Agent, Orchestrator, State, Handoff | Agent definitions, execution loop, memory |
 | **Tools** | Web search, file ops, code exec | Functions agents can call |
 | **Safety** | Loop detector, timeout manager | Prevents infinite loops and runaway costs |
@@ -90,9 +90,14 @@ No API keys are committed to this repo. Add keys through environment variables o
 
 ```bash
 set OPENAI_API_KEY=...
+set OPENAI_TRANSCRIPTION_MODEL=whisper-1
+set OPENAI_TTS_MODEL=tts-1
 set AZURE_OPENAI_API_KEY=...
 set AZURE_OPENAI_ENDPOINT=...
 set OPENROUTER_API_KEY=...
+set ELEVENLABS_API_KEY=...
+set MANUS_API_KEY=...
+set MANUS_BASE_URL=https://your-manus-compatible-endpoint/v1
 ```
 
 Local files such as `.env`, `config.json`, private keys, logs, and swarm state are ignored by git.
@@ -104,13 +109,16 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 - **Agent Council System** automatically runs on every swarm request before agent work starts. It collects specialist reasoning, surfaces risks and conflicts, tallies proceed/reject votes, and returns a confidence score. `--council` is available when you want only the meeting and vote.
 - **Different model types per agent** are explicit in the catalog: coding, reasoning, chat, vision, best, and cheap model preferences route through the model switcher/fallback chain.
 - **OpenClaw support** detects `OPENCLAW_BASE_URL` or `OPENCLAW_ENDPOINT`, optional `OPENCLAW_API_KEY`, and `OPENCLAW_MODEL`, then routes OpenClaw as an OpenAI-compatible `agent_gateway`.
+- **Manus support** detects `MANUS_API_KEY`, `MANUS_BASE_URL`/`MANUS_ENDPOINT`, and `MANUS_MODEL`, then routes Manus as a built-in OpenAI-compatible agent/workflow provider.
+- **ElevenLabs support** detects `ELEVENLABS_API_KEY`, `ELEVENLABS_STT_MODEL`, and `ELEVENLABS_TTS_MODEL`, then routes native speech-to-text and text-to-speech requests through the ElevenLabs adapter.
 - **Hermes support** recognizes Hermes/Nous model names as chat+reasoning capable options for writing, analytics, council, and planning work.
 - **Per-agent sub-agents** are built in. Each specialist has default helper roles and access to the `spawn_agent` tool for delegating focused work when needed.
 - **AI Reviewer Agent** reviews every individual agent output before integration for security vulnerabilities, performance issues, and logic errors. It produces GitHub PR inline comment payloads and routes fixes back to the responsible agent before the master connects the project parts.
-- **Text, image, video, and prompt agents** are first-class roles. The swarm includes text editing, prompt generation, image generation/editing, video generation/editing, Figma/design control, and browser prototype checks.
+- **Text, voice, image, video, and prompt agents** are first-class roles. The swarm includes text editing, prompt generation, speech-to-text, text-to-speech, image generation/editing, video generation/editing, Figma/design control, and browser prototype checks.
 - **Image and video generation model support** routes configured `image_generation` and `video_generation` models through provider adapters. OpenAI, Azure OpenAI/Foundry-style endpoints, and OpenAI-compatible media gateways can expose `images/generations` and configurable video generation routes.
+- **Voice-to-text and text-to-speech support** routes configured `speech_to_text` and `text_to_speech` models through OpenAI-compatible audio routes or native ElevenLabs endpoints. Voice agents can create transcript/subtitle workflows and narration/voiceover workflows without forcing audio work onto chat agents.
 - **Mockup video support** plans storyboard, generated/imported assets, motion, render preview, and export with draft-resolution guardrails.
-- **Photo/video app adapter registry** covers Adobe Photoshop, Lightroom, Illustrator, Premiere Pro, After Effects, Media Encoder, DaVinci Resolve, CapCut, Final Cut Pro, Blender, Figma, Canva, GIMP, Krita, Affinity tools, Runway, Pika, Kling, Stable Diffusion, and ComfyUI.
+- **Photo/video/audio app adapter registry** covers Adobe Photoshop, Lightroom, Illustrator, Premiere Pro, After Effects, Media Encoder, Audition, DaVinci Resolve, CapCut, Final Cut Pro, Blender, Figma, Canva, GIMP, Krita, Affinity tools, Runway, Pika, Kling, ElevenLabs, Manus, Whisper, Audacity, Stable Diffusion, and ComfyUI.
 - **Temporary skill acquisition** plans missing work skills, installs run-scoped skill manifests, injects them into the swarm, and deletes temporary downloads after all agents complete.
 - **Local model, CLI, MCP, and IDE support discovery** detects Ollama, LM Studio, vLLM, llama.cpp, Jan, KoboldCPP, text-generation-webui, LocalAI, Codex, OpenCode, Mistral Vibe, Claude Code, Gemini/Qwen CLIs, Aider, Cursor, Windsurf, VS Code, Zed, JetBrains surfaces, and common MCP servers.
 - **Token budget guardrails** estimate a single-agent run and cap the default swarm run to a small bounded overhead, with max iterations and parallel-agent limits derived from that budget.
@@ -126,7 +134,7 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 The swarm automatically detects available LLM providers from:
 
 1. **OpenCode config** (`~/.config/opencode/opencode.jsonc`) — best for existing users
-2. **Environment variables** — `AZURE_OPENAI_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENCLAW_BASE_URL`, `OPENCLAW_ENDPOINT`, `OPENCLAW_MODEL`
+2. **Environment variables** — `AZURE_OPENAI_API_KEY`, `OPENAI_API_KEY`, `OPENAI_TRANSCRIPTION_MODEL`, `OPENAI_TTS_MODEL`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENCLAW_BASE_URL`, `OPENCLAW_ENDPOINT`, `OPENCLAW_MODEL`, `ELEVENLABS_API_KEY`, `MANUS_API_KEY`, `MANUS_BASE_URL`, `MANUS_MODEL`
 3. **Fallback** — uses OpenRouter free tier as last resort
 
 The **best model** is used for the triage/routing agent, and **cheaper models** for worker agents.
@@ -207,6 +215,70 @@ video = await video_func(MediaGenerationRequest(
 
 The `photo_editor` agent prefers `image_generation` models and the `video_editor` agent prefers `video_generation` models. If no generator is configured, normal vision/chat fallback still applies through the model switcher.
 
+## Voice & Speech Models
+
+Agent Swarm can route audio work to dedicated speech models instead of spending chat-model tokens on transcription or voiceover tasks.
+
+### Voice model discovery
+
+```jsonc
+{
+  "provider": {
+    "elevenlabs": {
+      "options": { "apiKey": "..." },
+      "models": {
+        "scribe_v1": { "modalities": ["speech_to_text"] },
+        "eleven_multilingual_v2": { "modalities": ["text_to_speech"] }
+      }
+    },
+    "openai": {
+      "options": { "apiKey": "..." },
+      "models": {
+        "whisper-1": { "modalities": ["speech_to_text"] },
+        "tts-1": { "modalities": ["text_to_speech"] }
+      }
+    }
+  }
+}
+```
+
+Name-based detection also recognizes `whisper`, `scribe`, `transcribe`, `stt`, `tts`, `voice`, `speech`, and `eleven`.
+
+### Python API
+
+```python
+from swarm.config import SwarmConfig
+from swarm.providers.base import AudioSpeechRequest, AudioTranscriptionRequest
+from swarm.providers.factory import ProviderFactory
+
+config = SwarmConfig.from_opencode_config()
+
+transcription_model = config.find_model("speech_to_text")
+transcribe = ProviderFactory.get_transcription_func(config, transcription_model)
+transcript = await transcribe(AudioTranscriptionRequest(
+    audio_path="meeting.wav",
+    language="en",
+))
+
+voice_model = config.find_model("text_to_speech")
+speak = ProviderFactory.get_speech_func(config, voice_model)
+voiceover = await speak(AudioSpeechRequest(
+    text="Agent Swarm council approved the launch.",
+    voice="Rachel",
+    output_format="mp3",
+))
+```
+
+### Voice provider behavior
+
+| Provider type | Speech-to-text route | Text-to-speech route |
+|---------------|----------------------|----------------------|
+| OpenAI | `/audio/transcriptions` | `/audio/speech` |
+| OpenAI-compatible gateway | `/audio/transcriptions` by default, override with `extra.path` | `/audio/speech` by default, override with `extra.path` |
+| ElevenLabs | `/speech-to-text` | `/text-to-speech/{voice}` |
+
+The `voice_transcriber` agent prefers `speech_to_text` models and the `voice_generator` agent prefers `text_to_speech` models. `plan_voice_workflow` builds low-lag transcript, subtitle, narration, and voiceover plans with approval gates for voice cloning.
+
 ## Pre-Integration AI Review
 
 Before the master agent connects agent outputs together, each individual agent turn is scanned by the AI Reviewer pipeline:
@@ -221,9 +293,10 @@ The master review fails if unresolved preflight inline comments remain, so probl
 
 ## Skills, Apps, Local Models & IDEs
 
-- **Temporary skills:** `plan_temporary_skills` determines missing skills for browser, Figma, media, Blender, security, performance, and MCP work. Temporary skills are removed after the swarm finishes.
-- **Media apps:** `list_media_app_adapters` exposes adapter metadata for Adobe apps, DaVinci Resolve, CapCut, Blender, Figma, Canva, GIMP, Krita, Affinity, Runway, Pika, Kling, Stable Diffusion, and ComfyUI.
+- **Temporary skills:** `plan_temporary_skills` determines missing skills for browser, Figma, media, audio, voice, Blender, security, performance, and MCP work. Temporary skills are removed after the swarm finishes.
+- **Media apps:** `list_media_app_adapters` exposes adapter metadata for Adobe apps, DaVinci Resolve, CapCut, Blender, Figma, Canva, GIMP, Krita, Affinity, Runway, Pika, Kling, ElevenLabs, Manus, Whisper, Audacity, Stable Diffusion, and ComfyUI.
 - **Mockups:** `plan_mockup_video` creates a low-lag mockup video workflow with 720p draft previews, 24 fps draft renders, and final render approval.
+- **Voice workflows:** `plan_voice_workflow` creates speech-to-text and text-to-speech plans with chunking, preview-before-render, and voice-clone approval guardrails.
 - **Environment discovery:** `discover_environment_support` checks local model runtimes, CLI agents, IDE agents, and MCP server categories without blocking on missing tools.
 - **Lag/token controls:** model fallback cooldowns, replacement-model memory, bounded model chains, max iterations, max parallel agents, and token budget caps keep agents from getting stuck or exploding token usage.
 
@@ -340,6 +413,7 @@ agent-swarm/
 - Added dedicated `ai_reviewer` agent for per-agent security, performance, and logic review before integration.
 - Added GitHub PR inline comment payload generation and master-review blocking for unresolved preflight issues.
 - Added mockup video planning and broad photo/video/design app adapter registry including Adobe, DaVinci Resolve, CapCut, Blender, Figma, Stable Diffusion, ComfyUI, Runway, Pika, and Kling.
+- Added voice-to-text and text-to-speech agents, OpenAI-compatible audio routes, native ElevenLabs STT/TTS, and Manus provider discovery.
 - Added temporary skill planning, run-scoped skill install manifests, and automatic cleanup after agents finish.
 - Added local model runtime, CLI agent, IDE agent, and MCP support discovery.
 - Added smoother token/lag guardrails through deterministic preflight checks, bounded discovery, cooldown-aware model fallback, and cleanup.

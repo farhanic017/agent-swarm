@@ -1,6 +1,16 @@
 from typing import Optional
 import httpx
-from swarm.providers.base import LLMProvider, LLMResponse, MediaGenerationRequest, MediaGenerationResponse, Message
+from swarm.providers.base import (
+    AudioSpeechRequest,
+    AudioTranscriptionRequest,
+    AudioResponse,
+    LLMProvider,
+    LLMResponse,
+    MediaGenerationRequest,
+    MediaGenerationResponse,
+    Message,
+)
+from swarm.providers.audio import audio_response, file_tuple, speech_body, transcription_fields
 from swarm.providers.media import media_body, media_response
 
 
@@ -86,3 +96,30 @@ class OpenAICompatibleProvider(LLMProvider):
         )
         response.raise_for_status()
         return media_response("video", self.provider_name, model, response.json())
+
+    async def transcribe_audio(self, request: AudioTranscriptionRequest) -> AudioResponse:
+        model = request.model or "whisper-1"
+        path = request.extra.get("path") or "/audio/transcriptions"
+        response = await self._client.post(
+            f"{self.endpoint}{path}",
+            headers=self._headers(),
+            data=transcription_fields(request, model),
+            files={"file": file_tuple(request.audio_path)},
+        )
+        response.raise_for_status()
+        return audio_response("speech_to_text", self.provider_name, model, response.json())
+
+    async def synthesize_speech(self, request: AudioSpeechRequest) -> AudioResponse:
+        model = request.model or "tts-1"
+        path = request.extra.get("path") or "/audio/speech"
+        response = await self._client.post(
+            f"{self.endpoint}{path}",
+            headers=self._headers(),
+            json=speech_body(request, model),
+        )
+        response.raise_for_status()
+        try:
+            data = response.json()
+        except Exception:
+            data = getattr(response, "content", b"")
+        return audio_response("text_to_speech", self.provider_name, model, data)

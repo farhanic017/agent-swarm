@@ -13,7 +13,7 @@ from swarm.core.brainstorm import BrainstormEngine
 from swarm.core.debug_collab import DebugCollaboration
 from swarm.core.learning import LessonLearner
 from swarm.core.preflight_review import review_agent_output, format_github_review_comments
-from swarm.core.media_apps import list_media_apps, build_mockup_video_plan
+from swarm.core.media_apps import list_media_apps, build_mockup_video_plan, build_voice_workflow_plan
 from swarm.core.skill_runtime import plan_required_skills
 from swarm.core.environment_support import discover_environment_support
 
@@ -394,6 +394,20 @@ class ToolRegistry:
                 "properties": {
                     "prompt": {"type": "string"},
                     "app": {"type": "string"},
+                },
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_voice_workflow",
+            description="Create a speech-to-text or text-to-speech workflow using built-in audio providers such as ElevenLabs, Whisper/OpenAI-compatible routes, or Manus task routing.",
+            func=lambda prompt, mode="speech_to_text", provider="auto": json.dumps(build_voice_workflow_plan(prompt, mode, provider), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string"},
+                    "mode": {"type": "string", "enum": ["speech_to_text", "text_to_speech", "tts", "voice_generation"]},
+                    "provider": {"type": "string"},
                 },
                 "required": ["prompt"],
             },

@@ -123,6 +123,10 @@ def _candidate(provider: str, model: str) -> dict:
         specialties.update({"image_generation", "vision"})
     if any(token in model_lower for token in ("video", "sora", "veo", "runway", "kling", "wan", "motion")):
         specialties.update({"video_generation", "vision"})
+    if any(token in model_lower for token in ("speech-to-text", "speech_to_text", "stt", "transcribe", "transcription", "whisper", "scribe")):
+        specialties.add("speech_to_text")
+    if any(token in model_lower for token in ("text-to-speech", "text_to_speech", "tts", "voice", "speech", "eleven")):
+        specialties.add("text_to_speech")
     if any(token in model_lower for token in ("mini", "small", "flash", "instant", "haiku", "nano")):
         specialties.add("chat")
     if not specialties:
@@ -172,6 +176,9 @@ def _score_candidate(agent: Agent, role: str, candidate: dict, used_providers: l
     elif desired_preference in {"image_generation", "video_generation"} and "vision" in candidate["specialties"]:
         score += 30
         reasons.append("vision fallback for media generation")
+    elif desired_preference in {"speech_to_text", "text_to_speech"} and candidate["provider"].lower() == "elevenlabs":
+        score += 45
+        reasons.append("ElevenLabs voice provider fit")
     elif "general" in candidate["specialties"]:
         score += 12
         reasons.append("general fallback")

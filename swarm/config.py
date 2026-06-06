@@ -11,8 +11,10 @@ PROVIDER_PRIORITY = [
     "openai",
     "anthropic",
     "openclaw",
+    "manus",
     "google",
     "openrouter",
+    "elevenlabs",
     "groq",
     "together",
     "perplexity",
@@ -33,8 +35,10 @@ PROVIDER_ALIASES = {
     "openai": "openai",
     "anthropic": "anthropic", "anthropic-claude": "anthropic", "claude": "anthropic",
     "openclaw": "openclaw", "open-claw": "openclaw", "claw": "openclaw",
+    "manus": "manus", "manus-ai": "manus", "manusai": "manus",
     "google": "google", "google-ai": "google", "googleai": "google",
     "openrouter": "openrouter",
+    "elevenlabs": "elevenlabs", "eleven-labs": "elevenlabs", "11labs": "elevenlabs",
     "groq": "groq",
     "together": "together", "together-ai": "together", "togetherai": "together",
     "perplexity": "perplexity",
@@ -70,6 +74,23 @@ VIDEO_GENERATION_KEYWORDS = [
     "wan",
     "gen-",
     "motion",
+]
+SPEECH_TO_TEXT_KEYWORDS = [
+    "speech-to-text",
+    "speech_to_text",
+    "stt",
+    "transcribe",
+    "transcription",
+    "whisper",
+    "scribe",
+]
+TEXT_TO_SPEECH_KEYWORDS = [
+    "text-to-speech",
+    "text_to_speech",
+    "tts",
+    "speech",
+    "voice",
+    "eleven",
 ]
 
 LOCAL_MODEL_PORTS = [
@@ -114,7 +135,16 @@ def _model_supports(model_name: str, model_config: dict | None, kind: str) -> bo
         return True
 
     lower = model_name.lower()
-    keywords = IMAGE_GENERATION_KEYWORDS if kind == "image" else VIDEO_GENERATION_KEYWORDS
+    if kind == "image":
+        keywords = IMAGE_GENERATION_KEYWORDS
+    elif kind == "video":
+        keywords = VIDEO_GENERATION_KEYWORDS
+    elif kind in {"speech_to_text", "audio_transcription"}:
+        keywords = SPEECH_TO_TEXT_KEYWORDS
+    elif kind in {"text_to_speech", "speech_synthesis"}:
+        keywords = TEXT_TO_SPEECH_KEYWORDS
+    else:
+        keywords = []
     return any(token in lower for token in keywords)
 
 
@@ -195,6 +225,10 @@ class SwarmConfig:
                 openai_models[os.environ["OPENAI_IMAGE_MODEL"]] = {"modalities": ["image_generation"]}
             if os.environ.get("OPENAI_VIDEO_MODEL"):
                 openai_models[os.environ["OPENAI_VIDEO_MODEL"]] = {"modalities": ["video_generation"]}
+            if os.environ.get("OPENAI_TRANSCRIPTION_MODEL"):
+                openai_models[os.environ["OPENAI_TRANSCRIPTION_MODEL"]] = {"modalities": ["speech_to_text"]}
+            if os.environ.get("OPENAI_TTS_MODEL"):
+                openai_models[os.environ["OPENAI_TTS_MODEL"]] = {"modalities": ["text_to_speech"]}
             providers["openai"] = ProviderConfig(
                 api_key=openai_key,
                 models=openai_models,
@@ -213,6 +247,27 @@ class SwarmConfig:
                 api_key=os.environ.get("OPENCLAW_API_KEY", ""),
                 endpoint=openclaw_endpoint,
                 models={openclaw_model: {}},
+            )
+
+        manus_key = os.environ.get("MANUS_API_KEY")
+        manus_endpoint = os.environ.get("MANUS_BASE_URL") or os.environ.get("MANUS_ENDPOINT")
+        if manus_key or manus_endpoint:
+            manus_model = os.environ.get("MANUS_MODEL", "manus/default")
+            providers["manus"] = ProviderConfig(
+                api_key=manus_key or "",
+                endpoint=manus_endpoint,
+                models={manus_model: {}},
+            )
+
+        elevenlabs_key = os.environ.get("ELEVENLABS_API_KEY") or os.environ.get("ELEVEN_LABS_API_KEY")
+        if elevenlabs_key:
+            providers["elevenlabs"] = ProviderConfig(
+                api_key=elevenlabs_key,
+                endpoint=os.environ.get("ELEVENLABS_BASE_URL", "https://api.elevenlabs.io/v1"),
+                models={
+                    os.environ.get("ELEVENLABS_STT_MODEL", "scribe_v1"): {"modalities": ["speech_to_text"]},
+                    os.environ.get("ELEVENLABS_TTS_MODEL", "eleven_multilingual_v2"): {"modalities": ["text_to_speech"]},
+                },
             )
 
         groq_key = os.environ.get("GROQ_API_KEY")
@@ -418,6 +473,14 @@ class SwarmConfig:
         models = self.get_media_models("video")
         return models[0] if models else None
 
+    def get_best_speech_to_text_model(self) -> Optional[str]:
+        models = self.get_media_models("speech_to_text")
+        return models[0] if models else None
+
+    def get_best_text_to_speech_model(self) -> Optional[str]:
+        models = self.get_media_models("text_to_speech")
+        return models[0] if models else None
+
     def find_model(self, preference: str = "best") -> str:
         if preference in {"image", "image_generation", "image-generation"}:
             m = self.get_best_image_model()
@@ -425,6 +488,14 @@ class SwarmConfig:
                 return m
         if preference in {"video", "video_generation", "video-generation"}:
             m = self.get_best_video_model()
+            if m:
+                return m
+        if preference in {"speech_to_text", "speech-to-text", "transcription", "audio_transcription"}:
+            m = self.get_best_speech_to_text_model()
+            if m:
+                return m
+        if preference in {"text_to_speech", "text-to-speech", "speech_synthesis", "voice_generation"}:
+            m = self.get_best_text_to_speech_model()
             if m:
                 return m
         if preference == "best":

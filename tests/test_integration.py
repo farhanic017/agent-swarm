@@ -163,6 +163,33 @@ def test_media_generation_models_are_discovered_from_opencode_config(tmp_path):
     assert cfg.find_model("video_generation") == "openai:sora"
 
 
+def test_audio_models_are_discovered_from_opencode_config(tmp_path):
+    cfg_path = tmp_path / "opencode.jsonc"
+    cfg_path.write_text(
+        """
+        {
+          "provider": {
+            "elevenlabs": {
+              "options": { "apiKey": "x" },
+              "models": {
+                "scribe_v1": { "modalities": ["speech_to_text"] },
+                "eleven_multilingual_v2": { "modalities": ["text_to_speech"] }
+              }
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    cfg = SwarmConfig.from_opencode_config(str(cfg_path))
+
+    assert cfg.get_best_speech_to_text_model() == "elevenlabs:scribe_v1"
+    assert cfg.get_best_text_to_speech_model() == "elevenlabs:eleven_multilingual_v2"
+    assert cfg.find_model("speech_to_text") == "elevenlabs:scribe_v1"
+    assert cfg.find_model("text_to_speech") == "elevenlabs:eleven_multilingual_v2"
+
+
 def test_tool_registry_defaults():
     reg = ToolRegistry.create_default()
     tools = reg.list_tools()

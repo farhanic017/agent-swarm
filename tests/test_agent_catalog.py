@@ -24,6 +24,8 @@ def test_requested_business_and_creative_agents_exist():
         "localization",
         "photo_editor",
         "video_editor",
+        "voice_transcriber",
+        "voice_generator",
         "figma_controller",
         "text_editor",
         "prompt_generator",
@@ -34,6 +36,8 @@ def test_requested_business_and_creative_agents_exist():
     assert required.issubset(agents)
     assert agents["photo_editor"].task_type == "image_generation"
     assert agents["video_editor"].pillar == "see"
+    assert agents["voice_transcriber"].task_type == "speech_to_text"
+    assert agents["voice_generator"].model_preference == "text_to_speech"
     assert agents["figma_controller"].pillar == "design"
     assert agents["text_editor"].model_preference == "chat"
     assert agents["prompt_generator"].pillar == "design"
@@ -47,6 +51,8 @@ def test_agents_have_model_preferences_and_sub_agent_roles():
     assert agents["coder"].model_preference == "coding"
     assert agents["photo_editor"].model_preference == "image_generation"
     assert agents["video_editor"].model_preference == "video_generation"
+    assert agents["voice_transcriber"].model_preference == "speech_to_text"
+    assert agents["voice_generator"].model_preference == "text_to_speech"
     assert agents["council_master"].model_preference == "reasoning"
     assert "testing" in agents["coder"].sub_agent_roles
     assert "spawn_agent" in agents["coder"].tools

@@ -1,10 +1,10 @@
 {
   "feature_summary": {
-    "features": 9,
-    "successes": 9,
+    "features": 10,
+    "successes": 10,
     "failures": 0,
-    "avg_latency_seconds": 0.0017,
-    "avg_score": 95.6,
+    "avg_latency_seconds": 0.0018,
+    "avg_score": 96,
     "errors": {}
   },
   "features": [
@@ -14,28 +14,28 @@
       "elapsed_seconds": 0.0002,
       "score": 100,
       "details": {
-        "agents": 25,
+        "agents": 27,
         "pillars": [
           "act",
           "code",
           "design",
           "see"
         ],
-        "meshed_agents": 25
+        "meshed_agents": 27
       },
       "error": ""
     },
     {
       "feature": "smart_ai_selection_hybrid_routing",
       "ok": true,
-      "elapsed_seconds": 0.013,
+      "elapsed_seconds": 0.0147,
       "score": 100,
       "details": {
-        "assignments": 75,
+        "assignments": 81,
         "routes": {
           "local": 0,
           "mcp": 0,
-          "cloud": 75
+          "cloud": 81
         },
         "providers": [
           "azure-openai",
@@ -109,8 +109,8 @@
       "elapsed_seconds": 0.0001,
       "score": 90,
       "details": {
-        "planned_agents": 86,
-        "parents": 25,
+        "planned_agents": 92,
+        "parents": 27,
         "sample": [
           {
             "parent_agent": "triage",
@@ -152,6 +152,58 @@
       "error": ""
     },
     {
+      "feature": "voice_to_text_and_speech_support",
+      "ok": true,
+      "elapsed_seconds": 0.0005,
+      "score": 100,
+      "details": {
+        "voice_agents": [
+          "voice_transcriber",
+          "voice_generator"
+        ],
+        "speech_to_text_model": null,
+        "text_to_speech_model": null,
+        "audio_apps": [
+          "Adobe Audition",
+          "ElevenLabs",
+          "Whisper",
+          "Audacity"
+        ],
+        "plan": {
+          "prompt": "benchmark voice transcription and narration",
+          "mode": "speech_to_text",
+          "selected_app": {
+            "name": "Adobe Audition",
+            "category": "audio",
+            "executable_hints": [
+              "Adobe Audition.exe",
+              "audition"
+            ],
+            "capabilities": [
+              "noise_reduction",
+              "voiceover_edit",
+              "podcast_mix",
+              "batch_export"
+            ],
+            "automation": "extendscript_or_plugin_bridge"
+          },
+          "steps": [
+            "validate audio format and duration",
+            "transcribe with language and prompt hints when available",
+            "clean transcript and preserve timestamps",
+            "handoff subtitle or localization work to specialist agents",
+            "store transcript artifact for council/master review"
+          ],
+          "performance_guardrails": {
+            "chunk_long_audio": true,
+            "preview_before_full_voice_render": true,
+            "requires_user_approval_for_voice_clone": true
+          }
+        }
+      },
+      "error": ""
+    },
+    {
       "feature": "replacement_model_memory",
       "ok": true,
       "elapsed_seconds": 0.0001,
@@ -186,11 +238,11 @@
     {
       "feature": "real_time_dashboard_export",
       "ok": true,
-      "elapsed_seconds": 0.0019,
+      "elapsed_seconds": 0.0016,
       "score": 100,
       "details": {
         "path": "examples\\feature_benchmark_dashboard.html",
-        "bytes": 57271,
+        "bytes": 60352,
         "exists": true
       },
       "error": ""
