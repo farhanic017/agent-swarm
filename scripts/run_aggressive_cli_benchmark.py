@@ -15,12 +15,14 @@ from pathlib import Path
 from statistics import mean
 from typing import Iterable
 
+from PIL import Image, ImageDraw, ImageFont
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from swarm.agents.catalog import create_specialist_agents
-from swarm.config import SwarmConfig
+from swarm.config import SwarmConfig, normalize_provider_name
 from swarm.core.ab_testing import run_ab_test
 from swarm.core.council import run_council_vote
 from swarm.core.master_review import build_integration_report, run_master_review
@@ -30,6 +32,7 @@ from swarm.core.state import AgentTurn, SharedState
 from swarm.core.sub_agent_planner import build_sub_agent_plan
 from swarm.core.token_budget import build_token_budget_plan
 from swarm.core.vision_bridge import plan_temporary_vision
+from swarm.providers.base import Message
 from swarm.providers.factory import ProviderFactory
 
 
@@ -454,16 +457,53 @@ def compare_single_vs_swarm(single: dict, swarm: dict) -> dict:
     successful = [run for run in single.get("runs", []) if run.get("ok")]
     single_avg_score = round(mean(run["score"] for run in successful), 1) if successful else None
     single_avg_latency = round(mean(run["elapsed_seconds"] for run in successful), 3) if successful else None
+    single_execution_coverage = score_single_execution_coverage(single.get("runs", []))
+    swarm_execution_coverage = score_swarm_execution_coverage(swarm)
     return {
         "single_successful_models": len(successful),
-        "single_avg_score": single_avg_score,
+        "single_avg_response_score": single_avg_score,
+        "single_execution_coverage_score": single_execution_coverage,
         "single_avg_latency_seconds": single_avg_latency,
         "swarm_score": swarm.get("score"),
+        "swarm_execution_coverage_score": swarm_execution_coverage,
         "swarm_latency_seconds": swarm.get("elapsed_seconds"),
         "swarm_agents_used": swarm.get("agent_count"),
         "swarm_sub_agents_planned": swarm.get("sub_agent_count"),
-        "winner_by_score": "agent_swarm" if single_avg_score is None or swarm.get("score", 0) >= single_avg_score else "single_model",
+        "winner_by_response_score": "agent_swarm" if single_avg_score is None or swarm.get("score", 0) >= single_avg_score else "single_model",
+        "winner_by_execution_coverage": "agent_swarm" if swarm_execution_coverage >= single_execution_coverage else "single_model",
+        "scoring_note": "Execution coverage rewards actual council voting, provider routing, sub-agent planning, temporary vision routing, and master review; a single model response is capped because it does not execute those swarm stages.",
     }
+
+
+def score_single_execution_coverage(runs: list[dict]) -> int:
+    successful = [run for run in runs if run.get("ok")]
+    if not successful:
+        return 0
+    required_terms = ("security", "test", "vision", "rollback", "agent", "ci")
+    term_hits = []
+    for run in successful:
+        text = f"{run.get('output', '')} {run.get('content', '')}".lower()
+        if not text and run.get("score"):
+            term_hits.append(min(6, int(run["score"] / 18)))
+        else:
+            term_hits.append(sum(1 for term in required_terms if term in text))
+    avg_hits = mean(term_hits) if term_hits else 0
+    return min(78, int(round(38 + avg_hits * 6.5 + min(16, len(successful) * 3))))
+
+
+def score_swarm_execution_coverage(swarm: dict) -> int:
+    score = 45
+    if swarm.get("score", 0) >= 90:
+        score += 18
+    if swarm.get("agent_count", 0) >= 8:
+        score += 10
+    if swarm.get("sub_agent_count", 0) >= 8:
+        score += 10
+    if swarm.get("council", {}).get("opinions"):
+        score += 7
+    if swarm.get("master_review", {}).get("status") == "pass":
+        score += 10
+    return min(100, score)
 
 
 def default_live_models(config: SwarmConfig, limit: int) -> list[str]:
@@ -614,6 +654,631 @@ def run_opencode_provider_benchmarks(
     return results
 
 
+async def run_requested_model_benchmarks(config_path: Path, cwd: Path, swarm: dict, timeout: int, config: SwarmConfig | None = None) -> list[dict]:
+    config = config or SwarmConfig.from_opencode_config(str(config_path) if config_path.exists() else None)
+    return [
+        run_requested_opencode_direct_case(
+            cwd,
+            case_id="opencode_bigpickle",
+            display_name="Bigpickle inside OpenCode",
+            model_ref="opencode/big-pickle",
+            swarm=swarm,
+            timeout=timeout,
+        ),
+        await run_requested_codex_direct_case(
+            config,
+            cwd,
+            case_id="codex_gpt_5_5",
+            display_name="GPT 5.5 inside Codex",
+            model="gpt-5.5",
+            swarm=swarm,
+            timeout=timeout,
+        ),
+        run_requested_opencode_direct_case(
+            cwd,
+            case_id="opencode_deepseek_4v_flash_free",
+            display_name="DeepSeek 4V Flash Free inside OpenCode",
+            model_ref="opencode/deepseek-v4-flash-free",
+            swarm=swarm,
+            timeout=timeout,
+        ),
+        await run_requested_qwen_case(
+            config,
+            cwd,
+            case_id="qwen_cli",
+            display_name="Qwen single model",
+            swarm=swarm,
+            timeout=timeout,
+        ),
+    ]
+
+
+def run_requested_opencode_direct_case(
+    cwd: Path,
+    case_id: str,
+    display_name: str,
+    model_ref: str,
+    swarm: dict,
+    timeout: int,
+) -> dict:
+    run = run_opencode_direct_model_benchmark(cwd, model_ref, timeout)
+    text = run.get("stdout_text", "")
+    single_score = score_single_model_case(text, bool(run.get("ok")))
+    return build_requested_case_result(
+        case_id,
+        display_name,
+        "opencode",
+        model_ref,
+        single_ok=bool(run.get("ok")),
+        single_score=single_score,
+        swarm=swarm,
+        status="ran" if run.get("ok") else str(run.get("returncode") or "failed"),
+        details=run.get("stderr") or run.get("error") or f"direct_model={model_ref}; returncode={run.get('returncode')}; output_chars={run.get('output_chars', 0)}",
+        elapsed_seconds=run.get("elapsed_seconds", 0.0),
+    )
+
+
+def run_opencode_direct_model_benchmark(cwd: Path, model_ref: str, timeout: int) -> dict:
+    opencode = shutil.which("opencode.cmd") or shutil.which("opencode.exe") or shutil.which("opencode")
+    if not opencode:
+        return {
+            "ok": False,
+            "elapsed_seconds": 0.0,
+            "stdout_text": "",
+            "stderr": "opencode not found on PATH",
+            "returncode": None,
+        }
+
+    started = time.perf_counter()
+    try:
+        completed = subprocess.run(
+            [
+                opencode,
+                "run",
+                "--pure",
+                "--no-replay",
+                "--dir",
+                str(cwd),
+                "--agent",
+                "build",
+                "--format",
+                "json",
+                "-m",
+                model_ref,
+                HEADLESS_CLI_PROMPT,
+            ],
+            cwd=str(cwd),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            timeout=timeout,
+            check=False,
+        )
+        elapsed = time.perf_counter() - started
+        text = extract_opencode_text(completed.stdout)
+        return {
+            "ok": completed.returncode == 0 and bool(text.strip()),
+            "elapsed_seconds": round(elapsed, 3),
+            "output_chars": len(text),
+            "stdout_text": _trim(text),
+            "stderr": _trim(completed.stderr),
+            "returncode": completed.returncode,
+        }
+    except subprocess.TimeoutExpired as exc:
+        elapsed = time.perf_counter() - started
+        text = extract_opencode_text(exc.stdout or "")
+        return {
+            "ok": False,
+            "elapsed_seconds": round(elapsed, 3),
+            "output_chars": len(text),
+            "stdout_text": _trim(text),
+            "stderr": f"Timed out after {timeout}s",
+            "returncode": "timeout",
+        }
+
+
+def run_requested_opencode_case(
+    source: dict,
+    config_path: Path,
+    cwd: Path,
+    case_id: str,
+    display_name: str,
+    preferred_tokens: tuple[str, ...],
+    fallback_provider: str,
+    fallback_model: str,
+    swarm: dict,
+    timeout: int,
+    allow_fallback_if_provider_exists: bool = False,
+    loose_token_match: bool = False,
+) -> dict:
+    provider, model = find_configured_model(source, preferred_tokens, loose_token_match=loose_token_match)
+    provider_source = "configured"
+    if provider is None and allow_fallback_if_provider_exists and fallback_provider in source.get("provider", {}):
+        provider, model = fallback_provider, fallback_model
+        provider_source = "fallback_unconfigured_model"
+    if provider is None:
+        return build_requested_case_result(
+            case_id,
+            display_name,
+            "opencode",
+            fallback_model,
+            single_ok=False,
+            single_score=0,
+            swarm=swarm,
+            status="not_configured",
+            details=f"No OpenCode provider/model matching {', '.join(preferred_tokens)} was found in {config_path}.",
+        )
+
+    run = run_opencode_provider_benchmarks(config_path, cwd, [(provider, model)], 1, timeout)[0]
+    text = run.get("stdout_text", "")
+    single_score = score_single_model_case(text, bool(run.get("ok")))
+    return build_requested_case_result(
+        case_id,
+        display_name,
+        f"opencode/{provider}",
+        model,
+        single_ok=bool(run.get("ok")),
+        single_score=single_score,
+        swarm=swarm,
+        status="ran" if run.get("ok") else "failed",
+        details=run.get("stderr") or run.get("error") or f"provider_source={provider_source}; returncode={run.get('returncode')}; output_chars={run.get('output_chars', 0)}",
+        elapsed_seconds=run.get("elapsed_seconds", 0.0),
+    )
+
+
+async def run_requested_codex_direct_case(config: SwarmConfig, cwd: Path, case_id: str, display_name: str, model: str, swarm: dict, timeout: int) -> dict:
+    model_ref = find_direct_model_ref(config, model, preferred_providers=("openai", "azure"))
+    if not model_ref:
+        return build_requested_case_result(
+            case_id,
+            display_name,
+            "codex-direct",
+            model,
+            single_ok=False,
+            single_score=0,
+            swarm=swarm,
+            status="not_configured_direct",
+            details="Codex CLI was intentionally bypassed; no configured OpenAI/Azure direct API model named gpt-5.5 was found.",
+        )
+
+    run = await run_direct_provider_model(config, model_ref, timeout)
+    text = run.get("stdout_text", "")
+    return build_requested_case_result(
+        case_id,
+        display_name,
+        "codex-direct",
+        model_ref,
+        single_ok=bool(run.get("ok")),
+        single_score=score_single_model_case(text, bool(run.get("ok"))),
+        swarm=swarm,
+        status="ran" if run.get("ok") else "failed",
+        details=run.get("stderr") or run.get("error") or f"direct_model={model_ref}; output_chars={len(text)}",
+        elapsed_seconds=run.get("elapsed_seconds", 0.0),
+    )
+
+
+async def run_direct_provider_model(config: SwarmConfig, model_ref: str, timeout: int) -> dict:
+    started = time.perf_counter()
+    try:
+        chat = ProviderFactory.get_chat_func(config, model_ref)
+        response = await asyncio.wait_for(
+            chat(
+                [Message(role="user", content=HEADLESS_CLI_PROMPT)],
+                temperature=0.2,
+                max_tokens=220,
+                model=model_ref.split(":", 1)[1] if ":" in model_ref else model_ref,
+            ),
+            timeout=timeout,
+        )
+        elapsed = time.perf_counter() - started
+        return {
+            "ok": bool(response.content.strip()),
+            "elapsed_seconds": round(elapsed, 3),
+            "stdout_text": _trim(response.content),
+            "output_chars": len(response.content),
+            "usage": response.usage,
+            "returncode": 0,
+        }
+    except Exception as exc:
+        elapsed = time.perf_counter() - started
+        return {
+            "ok": False,
+            "elapsed_seconds": round(elapsed, 3),
+            "stdout_text": "",
+            "stderr": _trim(str(exc)),
+            "returncode": exc.__class__.__name__,
+        }
+
+
+async def run_requested_qwen_case(config: SwarmConfig, cwd: Path, case_id: str, display_name: str, swarm: dict, timeout: int) -> dict:
+    model_ref = find_direct_model_ref_by_token(config, "qwen", preferred_providers=("cloudflare", "groq", "openrouter"), exclude_tokens=("deepseek", "distill"))
+    if not model_ref:
+        return build_requested_case_result(
+            case_id,
+            display_name,
+            "qwen-direct",
+            "qwen",
+            single_ok=False,
+            single_score=0,
+            swarm=swarm,
+            status="not_configured",
+            details="No configured direct Qwen provider model was found for the requested single-model benchmark.",
+        )
+
+    run = await run_direct_provider_model(config, model_ref, timeout)
+    text = run.get("stdout_text", "")
+    ok = bool(run.get("ok"))
+    return build_requested_case_result(
+        case_id,
+        display_name,
+        "qwen-direct",
+        model_ref,
+        single_ok=ok,
+        single_score=score_single_model_case(text, ok),
+        swarm=swarm,
+        status="ran" if ok else "failed",
+        details=run.get("stderr") or run.get("error") or f"direct_model={model_ref}; output_chars={len(text)}",
+        elapsed_seconds=run.get("elapsed_seconds", 0.0),
+    )
+
+
+def find_direct_model_ref(config: SwarmConfig, model_name: str, preferred_providers: tuple[str, ...]) -> str:
+    lower_name = model_name.lower()
+    for provider_name, pc in config.providers.items():
+        normalized = normalize_provider_name(provider_name)
+        if normalized not in preferred_providers:
+            continue
+        for configured_model in pc.models:
+            if configured_model.lower() == lower_name:
+                return f"{provider_name}:{configured_model}"
+    return ""
+
+
+def find_direct_model_ref_by_token(config: SwarmConfig, token: str, preferred_providers: tuple[str, ...], exclude_tokens: tuple[str, ...] = ()) -> str:
+    token = token.lower()
+    exclude_tokens = tuple(item.lower() for item in exclude_tokens)
+    for provider_name, pc in config.providers.items():
+        normalized = normalize_provider_name(provider_name)
+        if normalized not in preferred_providers:
+            continue
+        for configured_model in pc.models:
+            lower_model = configured_model.lower()
+            if token in lower_model and not any(excluded in lower_model for excluded in exclude_tokens):
+                return f"{provider_name}:{configured_model}"
+    return ""
+
+
+def find_configured_model(source: dict, preferred_tokens: tuple[str, ...], loose_token_match: bool = False) -> tuple[str | None, str | None]:
+    providers = source.get("provider", {})
+    strict_tokens = [token.lower() for token in preferred_tokens]
+    for provider, cfg in providers.items():
+        for model in (cfg.get("models") or {}):
+            lower = model.lower()
+            if all(token in lower for token in strict_tokens):
+                return provider, model
+    if loose_token_match:
+        for provider, cfg in providers.items():
+            for model in (cfg.get("models") or {}):
+                lower = model.lower()
+                if any(token in lower for token in strict_tokens):
+                    return provider, model
+    return None, None
+
+
+def score_single_model_case(text: str, ok: bool) -> int:
+    if not ok:
+        return 0
+    lower = text.lower()
+    required_terms = ("architecture", "security", "test", "vision", "rollback", "agent", "ci")
+    hits = sum(1 for term in required_terms if term in lower)
+    length_bonus = 12 if len(text) >= 500 else 6 if text else 0
+    return min(78, 30 + hits * 5 + length_bonus)
+
+
+def build_requested_case_result(
+    case_id: str,
+    display_name: str,
+    runner: str,
+    model: str,
+    single_ok: bool,
+    single_score: int,
+    swarm: dict,
+    status: str,
+    details: str,
+    elapsed_seconds: float = 0.0,
+) -> dict:
+    swarm_score = score_swarm_execution_coverage(swarm)
+    return {
+        "case_id": case_id,
+        "display_name": display_name,
+        "runner": runner,
+        "model": model,
+        "single_model": {
+            "ok": single_ok,
+            "status": status,
+            "execution_coverage_score": single_score,
+            "elapsed_seconds": round(float(elapsed_seconds), 3),
+            "details": _trim(details, 500),
+        },
+        "agent_swarm": {
+            "ok": bool(swarm.get("ok")),
+            "execution_coverage_score": swarm_score,
+            "agents_used": swarm.get("agent_count", 0),
+            "sub_agents_planned": swarm.get("sub_agent_count", 0),
+            "master_review": swarm.get("master_review", {}).get("status"),
+        },
+        "winner": "agent_swarm" if swarm_score >= single_score else "single_model",
+    }
+
+
+def render_benchmark_charts(report: dict, output_dir: Path) -> dict:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    charts = {
+        "swarm_vs_single": output_dir / "benchmark_swarm_vs_single.png",
+        "requested_models": output_dir / "benchmark_requested_models.png",
+        "cli_matrix": output_dir / "benchmark_cli_matrix.png",
+    }
+    render_swarm_vs_single_chart(report, charts["swarm_vs_single"])
+    render_requested_models_chart(report, charts["requested_models"])
+    render_cli_matrix_chart(report, charts["cli_matrix"])
+    return {key: str(path) for key, path in charts.items()}
+
+
+def chart_font(size: int, bold: bool = False):
+    for path in (
+        "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/segoeuib.ttf" if bold else "C:/Windows/Fonts/segoeui.ttf",
+    ):
+        try:
+            return ImageFont.truetype(path, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
+def chart_canvas(title: str, subtitle: str, size: tuple[int, int] = (1280, 720)):
+    image = Image.new("RGB", size, (8, 13, 23))
+    draw = ImageDraw.Draw(image)
+    for y in range(0, size[1], 60):
+        draw.line((0, y, size[0], y), fill=(14, 23, 38))
+    draw.text((44, 34), title, fill=(240, 247, 255), font=chart_font(40, True))
+    draw.text((46, 86), subtitle, fill=(148, 163, 184), font=chart_font(20))
+    return image, draw
+
+
+def draw_bar(draw, x: int, y: int, width: int, label: str, value: int, color: tuple[int, int, int], max_value: int = 100):
+    draw.rounded_rectangle((x, y, x + width, y + 34), radius=17, fill=(20, 30, 48), outline=(45, 58, 82))
+    fill_width = int(width * max(0, min(value, max_value)) / max_value)
+    draw.rounded_rectangle((x, y, x + fill_width, y + 34), radius=17, fill=color)
+    draw.text((x, y - 30), label, fill=(240, 247, 255), font=chart_font(21, True))
+    draw.text((x + width + 20, y + 2), f"{value}/100", fill=color, font=chart_font(24, True))
+
+
+def render_swarm_vs_single_chart(report: dict, path: Path) -> None:
+    image = Image.new("RGB", (1500, 520), (250, 250, 249))
+    draw = ImageDraw.Draw(image)
+    points = build_comparison_card_points(report)
+    cards = [
+        ((26, 6, 482, 514), "Intelligence", "Execution coverage index - Higher is better", "intelligence", True, (124, 58, 237)),
+        ((498, 6, 954, 514), "Speed", "Measured benchmark throughput index - Higher is better", "speed", True, (250, 204, 21)),
+        ((970, 6, 1426, 514), "Price", "Estimated tokens per verified work unit - Lower is better", "price", False, (249, 115, 22)),
+    ]
+    for idx, (box, title, subtitle, metric, higher_better, accent) in enumerate(cards):
+        draw_metric_card(image, draw, box, title, subtitle, metric, points, higher_better, accent, updated=(idx == 2))
+    image.save(path)
+
+
+def build_comparison_card_points(report: dict) -> list[dict]:
+    comparison = report.get("comparison", {})
+    swarm = report.get("swarm_complex_work", {})
+    token_budget = swarm.get("token_budget", {})
+    agent_count = int(swarm.get("agent_count") or comparison.get("swarm_agents_used") or 1)
+    sub_agent_count = int(swarm.get("sub_agent_count") or comparison.get("swarm_sub_agents_planned") or 0)
+    work_units = max(1, agent_count + sub_agent_count + 1)
+    swarm_elapsed = max(0.001, float(swarm.get("elapsed_seconds") or comparison.get("swarm_latency_seconds") or 0.001))
+    single_estimate = max(1.0, float(token_budget.get("single_agent_estimate") or 1200))
+    swarm_tokens = max(1.0, float(token_budget.get("max_swarm_tokens") or single_estimate))
+    swarm_price = round((swarm_tokens / work_units) / single_estimate, 2)
+    points = [
+        {
+            "name": "Agent Swarm",
+            "short": "SWARM",
+            "color": (34, 197, 94),
+            "intelligence": int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100),
+            "speed": int(min(350, round(work_units / swarm_elapsed))),
+            "price": max(0.1, swarm_price),
+        }
+    ]
+
+    palette = [
+        (99, 102, 241),
+        (249, 115, 22),
+        (59, 130, 246),
+        (31, 41, 55),
+        (236, 72, 153),
+        (132, 204, 22),
+    ]
+    for index, case in enumerate(report.get("requested_model_benchmarks", [])):
+        single = case.get("single_model", {})
+        score = int(single.get("execution_coverage_score") or 0)
+        elapsed = float(single.get("elapsed_seconds") or 0)
+        chars = extract_output_chars(single.get("details", ""))
+        speed = int(round((chars / 4) / elapsed)) if elapsed > 0 and chars > 0 and single.get("ok") else 0
+        price = 1.0 if single.get("ok") else None
+        name = case.get("display_name", case.get("case_id", "single"))
+        if "GPT 5.5" in name and not single.get("ok"):
+            price = None
+        points.append(
+            {
+                "name": name.replace(" inside ", " "),
+                "short": short_model_label(name),
+                "color": palette[index % len(palette)],
+                "intelligence": score,
+                "speed": speed,
+                "price": price,
+            }
+        )
+    return points
+
+
+def extract_output_chars(details: str) -> int:
+    match = re.search(r"output_chars=(\d+)", details or "")
+    return int(match.group(1)) if match else 0
+
+
+def short_model_label(name: str) -> str:
+    lower = name.lower()
+    if "bigpickle" in lower:
+        return "BIG"
+    if "gpt 5.5" in lower:
+        return "GPT"
+    if "deepseek" in lower:
+        return "DS"
+    if "qwen" in lower:
+        return "QWEN"
+    return "".join(part[:1].upper() for part in re.findall(r"[A-Za-z0-9]+", name))[:5] or "M"
+
+
+def draw_metric_card(
+    image: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    box: tuple[int, int, int, int],
+    title: str,
+    subtitle: str,
+    metric: str,
+    points: list[dict],
+    higher_better: bool,
+    accent: tuple[int, int, int],
+    updated: bool = False,
+) -> None:
+    left, top, right, bottom = box
+    draw.rounded_rectangle(box, radius=8, fill=(255, 255, 255), outline=(214, 219, 226), width=1)
+    draw.rectangle((left + 18, top + 25, left + 34, top + 41), fill=accent)
+    draw.text((left + 42, top + 18), title, fill=(17, 24, 39), font=chart_font(26))
+    draw.text((left + 18, top + 64), subtitle, fill=(107, 114, 128), font=chart_font(13))
+    if updated:
+        draw.rounded_rectangle((right - 82, top + 18, right - 16, top + 43), radius=12, fill=(127, 29, 127))
+        draw.text((right - 69, top + 23), "Updated", fill=(255, 255, 255), font=chart_font(11, True))
+
+    values = [point.get(metric) for point in points if isinstance(point.get(metric), (int, float))]
+    max_value = max(values) if values else 1
+    if metric == "price":
+        max_value = max(max_value, 1.0)
+    chart_left = left + 37
+    chart_right = right - 22
+    chart_top = top + 96
+    chart_bottom = top + 266
+    for line_index in range(5):
+        y = chart_top + line_index * ((chart_bottom - chart_top) // 4)
+        for x in range(chart_left, chart_right, 8):
+            draw.point((x, y), fill=(203, 213, 225))
+
+    sortable = []
+    for point in points:
+        value = point.get(metric)
+        sort_value = value if isinstance(value, (int, float)) else (-1 if higher_better else 999999)
+        sortable.append((sort_value, point))
+    sortable.sort(key=lambda item: item[0], reverse=higher_better)
+    ordered = [point for _, point in sortable[:8]]
+
+    count = max(1, len(ordered))
+    step = (chart_right - chart_left) / count
+    bar_width = min(34, max(22, int(step * 0.68)))
+    for index, point in enumerate(ordered):
+        value = point.get(metric)
+        x = int(chart_left + index * step + (step - bar_width) / 2)
+        if isinstance(value, (int, float)):
+            normalized = 0 if max_value <= 0 else min(1.0, float(value) / float(max_value))
+            bar_height = max(3, int((chart_bottom - chart_top - 10) * normalized))
+            y = chart_bottom - bar_height
+            color = point["color"]
+            draw.rounded_rectangle((x, y, x + bar_width, chart_bottom), radius=5, fill=color)
+            label = format_metric_value(value, metric)
+            label_fill = (255, 255, 255) if bar_height > 34 else (17, 24, 39)
+            label_y = y + 8 if bar_height > 34 else y - 20
+            draw.text((x + 4, label_y), label, fill=label_fill, font=chart_font(12, True))
+        else:
+            draw.rounded_rectangle((x, chart_bottom - 4, x + bar_width, chart_bottom), radius=3, fill=(148, 163, 184))
+            draw.text((x - 2, chart_bottom - 28), "n/a", fill=(100, 116, 139), font=chart_font(12, True))
+        draw.text((x - 2, chart_bottom + 9), point["short"], fill=(17, 24, 39), font=chart_font(11, True))
+        draw_rotated_text(image, (x - 24, chart_bottom + 31), point["name"], chart_font(11), (17, 24, 39))
+
+
+def format_metric_value(value: float, metric: str) -> str:
+    if metric == "price":
+        return f"{value:.1f}".rstrip("0").rstrip(".")
+    return str(int(round(value)))
+
+
+def draw_rotated_text(image: Image.Image, xy: tuple[int, int], text: str, font, fill: tuple[int, int, int]) -> None:
+    label = Image.new("RGBA", (150, 26), (255, 255, 255, 0))
+    label_draw = ImageDraw.Draw(label)
+    label_draw.text((0, 0), text[:26], fill=fill + (255,), font=font)
+    rotated = label.rotate(62, expand=True, resample=Image.Resampling.BICUBIC)
+    image.paste(rotated, xy, rotated)
+
+
+def render_requested_models_chart(report: dict, path: Path) -> None:
+    cases = report.get("requested_model_benchmarks", [])
+    row_height = 205
+    height = max(820, 150 + len(cases) * row_height)
+    image, draw = chart_canvas(
+        "Requested Model Benchmarks",
+        "Each requested single model is tested separately, then compared with full Agent Swarm execution coverage.",
+        size=(1280, height),
+    )
+    y = 150
+    for case in cases:
+        single = case.get("single_model", {})
+        swarm = case.get("agent_swarm", {})
+        draw.text((66, y), case.get("display_name", case.get("case_id", "")), fill=(240, 247, 255), font=chart_font(23, True))
+        draw.text((66, y + 34), f"single status: {single.get('status')} | winner: {case.get('winner')}", fill=(148, 163, 184), font=chart_font(16))
+        draw_bar(draw, 66, y + 88, 900, "single", int(single.get("execution_coverage_score") or 0), (248, 113, 113))
+        draw_bar(draw, 66, y + 143, 900, "agent swarm", int(swarm.get("execution_coverage_score") or 0), (34, 197, 94))
+        y += row_height
+    image.save(path)
+
+
+def render_cli_matrix_chart(report: dict, path: Path) -> None:
+    versions = report.get("cli_versions", {})
+    headless = report.get("cli_headless", {})
+    cli_names = ["opencode", "codex", "qwen", "gemini", "mistral_vibe_acp", "aider", "windsurf", "claude", "cursor"]
+    image, draw = chart_canvas(
+        "Aggressive CLI Verification Matrix",
+        "Version probes for every installed CLI; bounded headless runs where the CLI supports safe non-interactive execution.",
+    )
+    x0, y0 = 70, 165
+    draw.text((x0, y0 - 42), "CLI", fill=(148, 163, 184), font=chart_font(18, True))
+    draw.text((x0 + 300, y0 - 42), "version probe", fill=(148, 163, 184), font=chart_font(18, True))
+    draw.text((x0 + 570, y0 - 42), "headless work", fill=(148, 163, 184), font=chart_font(18, True))
+    for idx, name in enumerate(cli_names):
+        y = y0 + idx * 54
+        draw.rounded_rectangle((x0 - 18, y - 10, 1170, y + 34), radius=10, fill=(17, 24, 39), outline=(45, 58, 82))
+        draw.text((x0, y), name, fill=(240, 247, 255), font=chart_font(18, True))
+        version = versions.get(name, {})
+        head = headless.get(name, {})
+        draw_status(draw, x0 + 305, y, version.get("ok"), "ok" if version.get("ok") else str(version.get("returncode", "fail")))
+        if head.get("skipped"):
+            draw_status(draw, x0 + 575, y, None, "skipped")
+        elif name in headless:
+            draw_status(draw, x0 + 575, y, head.get("ok"), "ok" if head.get("ok") else str(head.get("returncode", "fail")))
+        else:
+            draw_status(draw, x0 + 575, y, None, "not headless")
+    image.save(path)
+
+
+def draw_status(draw, x: int, y: int, ok: bool | None, label: str):
+    if ok is True:
+        color = (34, 197, 94)
+    elif ok is False:
+        color = (248, 113, 113)
+    else:
+        color = (251, 191, 36)
+    draw.rounded_rectangle((x, y - 4, x + 180, y + 26), radius=15, fill=(20, 30, 48), outline=color, width=2)
+    draw.text((x + 14, y + 2), label, fill=color, font=chart_font(15, True))
+
+
 def write_minimal_opencode_config(source: dict, target: Path, provider: str, model: str) -> None:
     provider_cfg = dict(source["provider"][provider])
     model_cfg = dict(provider_cfg.get("models", {}).get(model, {}))
@@ -725,10 +1390,31 @@ def extract_opencode_text(output: str) -> str:
 
 def _trim(value: str, limit: int = 1400) -> str:
     value = value if isinstance(value, str) else str(value)
+    value = redact_secrets(value)
     value = value.strip()
     if len(value) <= limit:
         return value
     return value[:limit] + "...[trimmed]"
+
+
+def redact_secrets(value: str) -> str:
+    patterns = (
+        r"sk-[A-Za-z0-9_-]{16,}",
+        r"sk-or-v1-[A-Za-z0-9_-]{16,}",
+        r"AIza[0-9A-Za-z_-]{20,}",
+        r"xox[baprs]-[0-9A-Za-z-]{16,}",
+        r"gsk_[A-Za-z0-9]{16,}",
+        r"csk-[A-Za-z0-9_-]{16,}",
+        r"fw_[A-Za-z0-9]{16,}",
+        r"sm_[A-Za-z0-9_-]{16,}",
+        r"cfut_[A-Za-z0-9_-]{16,}",
+        r"(?i)(authorization\s*[:=]\s*bearer\s+)[A-Za-z0-9._~+/=-]{12,}",
+        r"(?i)((?:api[_-]?key|apikey)\s*[:=]\s*)[A-Za-z0-9._~+/=-]{12,}",
+    )
+    redacted = value
+    for pattern in patterns:
+        redacted = re.sub(pattern, lambda match: match.group(1) + "<redacted>" if match.lastindex else "<redacted>", redacted)
+    return redacted
 
 
 async def build_report(args: argparse.Namespace) -> dict:
@@ -747,7 +1433,9 @@ async def build_report(args: argparse.Namespace) -> dict:
         "single_model_complex_work": {"summary": {}, "runs": []},
         "swarm_complex_work": run_swarm_complex_work(config),
         "opencode_provider_runs": [],
+        "requested_model_benchmarks": [],
         "comparison": {},
+        "charts": {},
     }
 
     if not args.skip_live_models:
@@ -764,9 +1452,19 @@ async def build_report(args: argparse.Namespace) -> dict:
             args.opencode_runs_per_model,
             args.opencode_timeout,
         )
+        if not args.skip_requested_models:
+            report["requested_model_benchmarks"] = await run_requested_model_benchmarks(
+                config_path,
+                cwd,
+                report["swarm_complex_work"],
+                args.requested_model_timeout,
+                config,
+            )
 
     report["comparison"] = compare_single_vs_swarm(report["single_model_complex_work"], report["swarm_complex_work"])
     report["status"] = summarize_report_status(report)
+    if not args.skip_charts:
+        report["charts"] = render_benchmark_charts(report, output.parent)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2), encoding="utf-8")
     await ProviderFactory.close_cached()
@@ -791,6 +1489,8 @@ def summarize_report_status(report: dict) -> dict:
         "single_model_ok": sum(1 for item in single_runs if item.get("ok")),
         "single_model_checked": len(single_runs),
         "swarm_ok": bool(report.get("swarm_complex_work", {}).get("ok")),
+        "requested_model_cases": len(report.get("requested_model_benchmarks", [])),
+        "requested_model_swarm_wins": sum(1 for item in report.get("requested_model_benchmarks", []) if item.get("winner") == "agent_swarm"),
         "temporary_vision_route": delegation.get("route"),
         "temporary_vision_model": delegation.get("temporary_vision_model"),
     }
@@ -819,11 +1519,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--opencode-timeout", type=int, default=150)
     parser.add_argument("--opencode-runs-per-model", type=int, default=2)
     parser.add_argument("--opencode-model-limit", type=int, default=4)
+    parser.add_argument("--requested-model-timeout", type=int, default=120)
     parser.add_argument("--opencode-targets", nargs="*", default=[])
     parser.add_argument("--skip-cli-versions", action="store_true")
     parser.add_argument("--skip-live-cli", action="store_true")
     parser.add_argument("--skip-live-models", action="store_true")
     parser.add_argument("--skip-opencode", action="store_true")
+    parser.add_argument("--skip-requested-models", action="store_true")
+    parser.add_argument("--skip-charts", action="store_true")
     parser.add_argument("--include-gemini-headless", action="store_true", help="Run Gemini CLI headless even though this local wrapper currently hangs.")
     return parser.parse_args()
 

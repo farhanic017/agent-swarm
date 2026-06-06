@@ -23,6 +23,9 @@ def test_media_app_registry_includes_requested_apps_and_mockup_video():
     assert "Manus" in names
     assert "Adobe Audition" in names
     assert "Kling AI" in names
+    assert "Google Flow" in names
+    assert "Google Veo" in names
+    assert "Omni Image/Video" in names
     assert "Imagine" in names
     assert "Seedance" in names
     assert "Highfield" in names
@@ -41,6 +44,18 @@ def test_media_app_registry_includes_requested_apps_and_mockup_video():
     voice_plan = build_voice_workflow_plan("turn product copy into voiceover", "text_to_speech")
     assert voice_plan["mode"] == "text_to_speech"
     assert voice_plan["performance_guardrails"]["requires_user_approval_for_voice_clone"]
+
+
+def test_blender_heavy_modeling_mode_is_supported():
+    plan = build_3d_modeling_plan(
+        "create a heavy highly detailed realistic Blender building with sculpted facade and 4k materials",
+        "Blender",
+    )
+
+    assert plan["detail_mode"] == "heavy_high_detail"
+    assert plan["performance_guardrails"]["heavy_modeling_allowed_after_preview"] is True
+    assert plan["performance_guardrails"]["create_proxy_or_decimated_export"] is True
+    assert any("high-poly" in step for step in plan["steps"])
 
 
 def test_temporary_skill_session_installs_and_cleans_up(tmp_path):
@@ -126,6 +141,7 @@ def test_user_owned_designs_are_allowed_for_direct_3d_modeling():
     assert building["user_owned_design_allowed"] is True
     assert original_character["decision"] == "allow_direct_3d_build"
     assert plan["policy"]["user_owned_design_allowed"] is True
+    assert plan["detail_mode"] == "heavy_high_detail"
     assert plan["quality_bar"]["user_owned_designs"] == "match the user's design as closely as possible"
 
 

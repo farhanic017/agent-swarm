@@ -11,7 +11,7 @@
     {
       "feature": "agent_catalog_4_pillars_20_plus_agents",
       "ok": true,
-      "elapsed_seconds": 0.0009,
+      "elapsed_seconds": 0.001,
       "score": 100,
       "details": {
         "agents": 98,
@@ -28,7 +28,7 @@
     {
       "feature": "smart_ai_selection_hybrid_routing",
       "ok": true,
-      "elapsed_seconds": 0.0437,
+      "elapsed_seconds": 0.0435,
       "score": 100,
       "details": {
         "assignments": 174,
@@ -106,7 +106,7 @@
     {
       "feature": "sub_agent_planning",
       "ok": true,
-      "elapsed_seconds": 0.0001,
+      "elapsed_seconds": 0.0002,
       "score": 90,
       "details": {
         "planned_agents": 135,
@@ -207,7 +207,7 @@
     {
       "feature": "compact_docs_mcp_xss_support",
       "ok": true,
-      "elapsed_seconds": 0.0007,
+      "elapsed_seconds": 0.0006,
       "score": 100,
       "details": {
         "compact_command": "/compact",
@@ -233,7 +233,7 @@
     {
       "feature": "graphify_obsidian_secure_file_access",
       "ok": true,
-      "elapsed_seconds": 0.0014,
+      "elapsed_seconds": 0.0012,
       "score": 100,
       "details": {
         "allowed_path": "C:\\Users\\Farhan\\Documents\\Codex\\2026-06-05\\files-mentioned-by-the-user-agent\\work\\agent-swarm-push\\examples\\v5-security-probe.txt",
@@ -249,7 +249,7 @@
     {
       "feature": "hermes_self_evolution_skill_creation",
       "ok": true,
-      "elapsed_seconds": 0.0051,
+      "elapsed_seconds": 0.0048,
       "score": 100,
       "details": {
         "proposal_valid": true,

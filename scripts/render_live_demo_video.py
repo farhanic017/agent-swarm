@@ -82,8 +82,8 @@ FEATURES = [
     "20+ agents", "4 pillars", "always-on council", "A/B voting", "real-time dashboard",
     "live code typing", "sub-agents", "provider fallback", "local/MCP/cloud", "OpenCode/Qwen/Mistral",
     "browser control", "web scraper", "job applier", "app builder", "backend maker", "app tester",
-    "image/video generation", "photo/video editors", "voice STT/TTS", "Figma + Blender", "mockup video",
-    "building design", "temporary vision", "temporary skills", "MCP marketplace", "Graphify", "Obsidian",
+    "image/video generation", "Google Flow", "Omni", "Veo", "photo/video editors", "voice STT/TTS", "Figma + Blender", "heavy 3D models", "mockup video",
+    "building design", "temporary vision", "benchmark charts", "temporary skills", "MCP marketplace", "Graphify", "Obsidian",
     "scoped file security", "AI reviewer", "XSS checks", "/compact memory", "Hermes self-evolution",
 ]
 
@@ -126,7 +126,7 @@ def base_frame(frame: int) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     for y in range(0, HEIGHT, 64):
         draw.line((0, y, WIDTH, y), fill=(15, 23, 38))
     draw.rectangle((0, 0, WIDTH, 72), fill=(10, 16, 28))
-    draw_text(draw, (34, 20), "Agent Swarm v6", fnt=F_H2)
+    draw_text(draw, (34, 20), "Agent Swarm v7", fnt=F_H2)
     draw_text(draw, (1110, 23), "16:9 live demo", fill=MUTED, fnt=F_SMALL)
     return img, draw
 
@@ -227,8 +227,8 @@ def scene_agents(draw, local: int):
 
 
 def scene_connected_graph(draw, local: int):
-    draw_text(draw, (58, 104), "Live connected agent graph: everyone working together", fnt=F_H1)
-    draw_text(draw, (62, 145), "Colored nodes show active agents, providers, sub-agents, shared messages, and work flowing between pillars.", fill=MUTED, fnt=F_SMALL)
+    draw_text(draw, (58, 104), "Live graph: agents verify, connect, then publish", fnt=F_H1)
+    draw_text(draw, (62, 145), "Every specialist verifies its slice, connects artifacts, then passes evidence to master review and publish.", fill=MUTED, fnt=F_SMALL)
     graph_agents = [
         ("coder", "mistral", 92, 208, GREEN),
         ("reviewer", "openrouter", 92, 288, GREEN),
@@ -247,7 +247,8 @@ def scene_connected_graph(draw, local: int):
         ("finance", "azure", 1002, 285, AMBER),
         ("trading", "mcp", 1002, 365, AMBER),
         ("product_manager", "openrouter", 1002, 445, AMBER),
-        ("council_master", "fireworks", 1002, 525, AMBER),
+        ("master_review", "verify", 1002, 525, GREEN),
+        ("publish", "release", 1162, 365, BLUE),
     ]
     positions = {name: (x, y) for name, _, x, y, _ in graph_agents}
     edges = [
@@ -257,7 +258,8 @@ def scene_connected_graph(draw, local: int):
         ("ux_research", "design"), ("photo_editor", "design"), ("writer", "marketing"),
         ("writer", "product_manager"), ("localization", "finance"), ("design", "marketing"),
         ("design", "finance"), ("design", "trading"), ("design", "product_manager"),
-        ("figma_controller", "council_master"), ("security", "council_master"), ("testing", "council_master"),
+        ("figma_controller", "master_review"), ("security", "master_review"), ("testing", "master_review"),
+        ("product_manager", "master_review"), ("master_review", "publish"),
         ("hermes", "design"),
     ]
     positions["hermes"] = (632, 535)
@@ -362,11 +364,11 @@ def scene_tools(draw, local: int):
 def scene_media(draw, local: int):
     draw_text(draw, (58, 106), "Creative stack: image, video, voice, design, 3D", fnt=F_H1)
     items = [
-        ("Photo editing", "Photoshop / GIMP / ComfyUI", PINK),
-        ("Video editing", "Premiere / CapCut / DaVinci", PURPLE),
+        ("Image generation", "Omni / Imagen / Flow assets", PINK),
+        ("Video generation", "Google Flow / Veo / Kling", PURPLE),
         ("Voice", "STT + TTS + ElevenLabs", GREEN),
         ("Figma", "layouts + prototype checks", BLUE),
-        ("Blender", "lightweight 3D builds", AMBER),
+        ("Blender", "heavy + lightweight 3D", AMBER),
         ("Animator", "mockup videos + keyframes", RED),
     ]
     for idx, (title, sub, color) in enumerate(items):
@@ -420,19 +422,22 @@ def scene_hermes(draw, local: int):
 def scene_finish(draw, local: int):
     draw_text(draw, (96, 128), "Aggressive verification", fnt=F_TITLE)
     cards = [
-        ("pytest", "298 passed", GREEN),
-        ("warnings", "298 passed", GREEN),
-        ("compile", "clean", BLUE),
+        ("pytest", "312 passed", GREEN),
+        ("warnings", "312 passed", GREEN),
+        ("all CLIs", "shown", BLUE),
         ("feature benchmark", "15/15 passed", PURPLE),
-        ("OpenCode Qwen", "OK", AMBER),
-        ("OpenCode Mistral", "OK", PINK),
+        ("OpenCode", "6/6", AMBER),
+        ("Qwen + Aider", "OK", PINK),
+        ("Codex", "blocked locally", RED),
+        ("Gemini", "version OK", BLUE),
+        ("charts", "generated", GREEN),
     ]
     for idx, (title, value, color) in enumerate(cards):
-        x = 105 + (idx % 3) * 360
-        y = 250 + (idx // 3) * 130
-        draw_round(draw, (x, y, x + 300, y + 88), 14, PANEL, color, 2)
-        draw_text(draw, (x + 22, y + 17), title, fill=MUTED, fnt=F_SMALL)
-        draw_text(draw, (x + 22, y + 45), value, fill=color, fnt=F_H2)
+        x = 88 + (idx % 3) * 382
+        y = 226 + (idx // 3) * 112
+        draw_round(draw, (x, y, x + 320, y + 78), 14, PANEL, color, 2)
+        draw_text(draw, (x + 20, y + 13), title, fill=MUTED, fnt=F_SMALL)
+        draw_text(draw, (x + 20, y + 40), value, fill=color, fnt=F_SMALL if len(value) > 12 else F_H2)
 
 
 SCENES = [

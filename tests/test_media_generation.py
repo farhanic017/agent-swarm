@@ -100,3 +100,29 @@ async def test_provider_factory_routes_image_and_video_model_refs(monkeypatch):
 
     assert image.model == "flux-dev"
     assert video.model == "wan-video"
+
+
+def test_google_flow_omni_and_veo_models_are_detected_for_generation():
+    cfg = SwarmConfig(
+        providers={
+            "google-ai": ProviderConfig(
+                api_key="x",
+                models={
+                    "google-flow-veo-3": {},
+                    "veo-3": {},
+                    "omni-image": {},
+                    "omni-video": {},
+                },
+            )
+        }
+    )
+
+    image_models = cfg.get_media_models("image")
+    video_models = cfg.get_media_models("video")
+    vision_models = cfg.get_media_models("vision")
+
+    assert "google-ai:omni-image" in image_models
+    assert "google-ai:google-flow-veo-3" in video_models
+    assert "google-ai:veo-3" in video_models
+    assert "google-ai:omni-video" in video_models
+    assert "google-ai:google-flow-veo-3" in vision_models

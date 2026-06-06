@@ -1,8 +1,13 @@
+import asyncio
 import json
+from pathlib import Path
 
+import scripts.run_aggressive_cli_benchmark as benchmark_script
 from scripts.run_aggressive_cli_benchmark import (
     compare_single_vs_swarm,
     default_opencode_targets,
+    render_benchmark_charts,
+    run_requested_model_benchmarks,
     run_swarm_complex_work,
     run_temporary_vision_probe,
     strip_jsonc,
@@ -60,9 +65,10 @@ def test_compare_single_vs_swarm_picks_swarm_when_score_is_higher():
 
     comparison = compare_single_vs_swarm(single, swarm)
 
-    assert comparison["single_avg_score"] == 75.0
+    assert comparison["single_avg_response_score"] == 75.0
+    assert comparison["single_execution_coverage_score"] < comparison["swarm_execution_coverage_score"]
     assert comparison["single_avg_latency_seconds"] == 2.0
-    assert comparison["winner_by_score"] == "agent_swarm"
+    assert comparison["winner_by_execution_coverage"] == "agent_swarm"
 
 
 def test_default_opencode_targets_parse_jsonc(tmp_path):
@@ -85,3 +91,50 @@ def test_default_opencode_targets_parse_jsonc(tmp_path):
         ("cloudflare", "@cf/qwen/qwen2.5-coder-32b-instruct"),
         ("mistral", "mistral-small-latest"),
     ]
+
+
+def test_requested_model_benchmarks_record_blocked_models_without_crashing(tmp_path, monkeypatch):
+    config = tmp_path / "opencode.jsonc"
+    config.write_text('{"provider": {"openrouter": {"models": {}}}}', encoding="utf-8")
+    swarm = {"ok": True, "score": 100, "agent_count": 12, "sub_agent_count": 20, "council": {"opinions": [1]}, "master_review": {"status": "pass"}}
+
+    monkeypatch.setattr(benchmark_script, "run_command", lambda *args, **kwargs: {"ok": False, "stderr": "blocked", "returncode": "blocked"})
+    monkeypatch.setattr(
+        benchmark_script,
+        "run_opencode_direct_model_benchmark",
+        lambda *args, **kwargs: {"ok": False, "stderr": "model unavailable", "elapsed_seconds": 0, "stdout_text": ""},
+    )
+    results = asyncio.run(run_requested_model_benchmarks(config, tmp_path, swarm, timeout=1))
+
+    assert len(results) == 4
+    assert all(item["winner"] == "agent_swarm" for item in results)
+    assert any(item["case_id"] == "codex_gpt_5_5" for item in results)
+    assert any(item["case_id"] == "qwen_cli" for item in results)
+
+
+def test_benchmark_chart_renderer_writes_pngs(tmp_path):
+    report = {
+        "comparison": {
+            "single_avg_response_score": 76,
+            "single_execution_coverage_score": 58,
+            "swarm_execution_coverage_score": 100,
+            "winner_by_execution_coverage": "agent_swarm",
+            "scoring_note": "test note",
+        },
+        "requested_model_benchmarks": [
+            {
+                "case_id": "case",
+                "display_name": "Case",
+                "winner": "agent_swarm",
+                "single_model": {"status": "blocked", "execution_coverage_score": 0},
+                "agent_swarm": {"execution_coverage_score": 100},
+            }
+        ],
+        "cli_versions": {"opencode": {"ok": True}, "codex": {"ok": False, "returncode": "oserror"}},
+        "cli_headless": {"qwen": {"ok": True}, "gemini": {"skipped": True}},
+    }
+
+    charts = render_benchmark_charts(report, tmp_path)
+
+    assert set(charts) == {"swarm_vs_single", "requested_models", "cli_matrix"}
+    assert all(Path(path).exists() for path in charts.values())

@@ -34,7 +34,7 @@ MEDIA_APP_ADAPTERS: tuple[MediaAppAdapter, ...] = (
     MediaAppAdapter("DaVinci Resolve", "video", ("Resolve.exe", "resolve"), ("edit", "fusion", "color", "fairlight", "deliver"), "python_lua_api"),
     MediaAppAdapter("CapCut", "video", ("CapCut.exe", "capcut"), ("short_form", "captions", "templates", "social_export"), "desktop_project_bridge"),
     MediaAppAdapter("Final Cut Pro", "video", ("Final Cut Pro",), ("timeline", "titles", "effects", "export"), "fcpxml_bridge"),
-    MediaAppAdapter("Blender", "3d", ("blender.exe", "blender"), ("3d_mockup", "animation", "render", "glb_export"), "python_cli"),
+    MediaAppAdapter("Blender", "3d", ("blender.exe", "blender"), ("3d_mockup", "heavy_3d_modeling", "sculpting", "animation", "render", "glb_export"), "python_cli"),
     MediaAppAdapter("Figma", "design", ("figma",), ("design_mockup", "prototype", "components", "handoff"), "mcp_or_plugin_bridge"),
     MediaAppAdapter("Canva", "design", ("canva",), ("templates", "social_assets", "brand_kit"), "browser_or_api_bridge"),
     MediaAppAdapter("GIMP", "photo", ("gimp.exe", "gimp"), ("retouch", "layers", "batch_edit"), "script_fu_python"),
@@ -44,6 +44,9 @@ MEDIA_APP_ADAPTERS: tuple[MediaAppAdapter, ...] = (
     MediaAppAdapter("Runway", "video_ai", ("runway",), ("text_to_video", "image_to_video", "background_remove"), "api_bridge"),
     MediaAppAdapter("Pika", "video_ai", ("pika",), ("text_to_video", "image_to_video", "mockup_video"), "api_bridge"),
     MediaAppAdapter("Kling AI", "video_ai", ("kling", "kling-ai"), ("text_to_video", "image_to_video", "mockup_video"), "api_bridge"),
+    MediaAppAdapter("Google Flow", "video_ai", ("google-flow", "flow"), ("text_to_video", "image_to_video", "storyboard_to_video", "veo_routing", "mockup_video"), "api_or_browser_bridge"),
+    MediaAppAdapter("Google Veo", "video_ai", ("veo", "veo-2", "veo-3"), ("text_to_video", "image_to_video", "cinematic_video", "mockup_video"), "api_bridge"),
+    MediaAppAdapter("Omni Image/Video", "image_video_ai", ("omni", "omnigen", "omni-video"), ("text_to_image", "image_to_image", "text_to_video", "image_to_video", "multimodal_generation"), "api_bridge"),
     MediaAppAdapter("Imagine", "image_ai", ("imagine",), ("text_to_image", "image_to_image", "creative_variants"), "api_bridge"),
     MediaAppAdapter("Seedance", "video_ai", ("seedance", "sedance"), ("text_to_video", "image_to_video", "short_video"), "api_bridge"),
     MediaAppAdapter("Highfield", "video_ai", ("highfield",), ("text_to_video", "cinematic_video", "mockup_video"), "api_bridge"),
@@ -136,10 +139,38 @@ def build_3d_modeling_plan(prompt: str, app: str = "Blender") -> dict:
     if selected is None:
         selected = next(item for item in MEDIA_APP_ADAPTERS if item.name == "Blender")
     workflow = build_3d_design_workflow(prompt, selected.name)
+    lower = prompt.lower()
+    heavy_requested = any(
+        token in lower
+        for token in (
+            "heavy",
+            "high detail",
+            "high-detail",
+            "detailed",
+            "realistic",
+            "production",
+            "cinematic",
+            "sculpt",
+            "subdivision",
+            "4k",
+            "8k",
+        )
+    )
     workflow["selected_app"] = selected.to_dict()
+    workflow["detail_mode"] = "heavy_high_detail" if heavy_requested else "lightweight_preview"
+    if heavy_requested:
+        workflow["steps"].extend([
+            "add high-poly sculpt or subdivision pass after the approved blockout",
+            "build detailed materials, bevels, displacement/normal maps, and inspection cameras",
+            "create decimated proxy exports plus a full-detail archive when requested",
+        ])
     workflow["performance_guardrails"] = {
         "start_with_lightweight_blockout": True,
         "preview_render_before_high_detail": True,
+        "heavy_modeling_allowed_after_preview": heavy_requested,
+        "use_incremental_saves": True,
+        "create_proxy_or_decimated_export": heavy_requested,
+        "final_heavy_render_requires_user_approval": heavy_requested,
         "export_after_visual_qa": True,
     }
     return workflow
