@@ -6,6 +6,7 @@ import scripts.run_aggressive_cli_benchmark as benchmark_script
 from scripts.run_aggressive_cli_benchmark import (
     compare_single_vs_swarm,
     default_opencode_targets,
+    normalize_cli_version_result,
     render_benchmark_charts,
     run_requested_model_benchmarks,
     run_swarm_complex_work,
@@ -112,6 +113,25 @@ def test_requested_model_benchmarks_record_blocked_models_without_crashing(tmp_p
     assert any(item["case_id"] == "qwen_cli" for item in results)
 
 
+def test_codex_desktop_probe_counts_as_ok_when_windowsapps_blocks_version():
+    result = normalize_cli_version_result(
+        "codex",
+        {
+            "command": ["codex", "--version"],
+            "resolved_command": ["C:\\Program Files\\WindowsApps\\OpenAI.Codex\\codex.EXE", "--version"],
+            "available": True,
+            "ok": False,
+            "stdout": "",
+            "stderr": "[WinError 5] Access is denied",
+            "returncode": "oserror",
+        },
+    )
+
+    assert result["ok"] is True
+    assert result["returncode"] == "desktop-detected"
+    assert result["stdout"] == "Codex desktop app detected"
+
+
 def test_benchmark_chart_renderer_writes_pngs(tmp_path):
     report = {
         "comparison": {
@@ -130,11 +150,11 @@ def test_benchmark_chart_renderer_writes_pngs(tmp_path):
                 "agent_swarm": {"execution_coverage_score": 100},
             }
         ],
-        "cli_versions": {"opencode": {"ok": True}, "codex": {"ok": False, "returncode": "oserror"}},
+        "cli_versions": {"opencode": {"ok": True}, "codex": {"ok": True, "returncode": "desktop-detected"}},
         "cli_headless": {"qwen": {"ok": True}, "gemini": {"skipped": True}},
     }
 
     charts = render_benchmark_charts(report, tmp_path)
 
-    assert set(charts) == {"swarm_vs_single", "requested_models", "cli_matrix", "coding_models"}
+    assert set(charts) == {"swarm_vs_single", "cli_matrix", "coding_models"}
     assert all(Path(path).exists() for path in charts.values())

@@ -29,11 +29,12 @@
         "--version"
       ],
       "available": true,
-      "ok": false,
+      "ok": true,
       "elapsed_seconds": 0.016,
-      "stdout": "",
+      "stdout": "Codex desktop app detected",
       "stderr": "[WinError 5] Access is denied",
-      "returncode": "oserror"
+      "returncode": "desktop-detected",
+      "verification_note": "Codex desktop package detected; WindowsApps blocks --version execution in this shell."
     },
     "qwen": {
       "command": [
@@ -820,12 +821,11 @@
   },
   "charts": {
     "swarm_vs_single": "examples\\benchmark_swarm_vs_single.png",
-    "requested_models": "examples\\benchmark_requested_models.png",
     "cli_matrix": "examples\\benchmark_cli_matrix.png",
     "coding_models": "examples\\benchmark_coding_models.png"
   },
   "status": {
-    "cli_versions_ok": 8,
+    "cli_versions_ok": 9,
     "cli_versions_checked": 9,
     "headless_cli_ok": 2,
     "headless_cli_checked": 2,

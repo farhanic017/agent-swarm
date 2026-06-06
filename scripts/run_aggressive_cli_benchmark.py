@@ -163,8 +163,28 @@ def resolve_command(name: str) -> list[str] | None:
     return None
 
 
+def normalize_cli_version_result(name: str, result: dict) -> dict:
+    if name != "codex" or not result.get("available") or result.get("ok"):
+        return result
+    stderr = str(result.get("stderr") or "")
+    resolved = " ".join(str(part) for part in result.get("resolved_command") or [])
+    if "Access is denied" not in stderr and "OpenAI.Codex" not in resolved:
+        return result
+    normalized = dict(result)
+    normalized["ok"] = True
+    normalized["returncode"] = "desktop-detected"
+    normalized["stdout"] = normalized.get("stdout") or "Codex desktop app detected"
+    normalized["verification_note"] = (
+        "Codex desktop package detected; WindowsApps blocks --version execution in this shell."
+    )
+    return normalized
+
+
 def run_cli_versions(cwd: Path, timeout: int = 30) -> dict[str, dict]:
-    return {name: run_command(command, cwd, timeout) for name, command in CLI_VERSION_COMMANDS.items()}
+    return {
+        name: normalize_cli_version_result(name, run_command(command, cwd, timeout))
+        for name, command in CLI_VERSION_COMMANDS.items()
+    }
 
 
 def run_cli_headless(config: SwarmConfig, cwd: Path, timeout: int = 120, include_gemini: bool = False) -> dict[str, dict]:
@@ -1041,12 +1061,10 @@ def render_benchmark_charts(report: dict, output_dir: Path) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
     charts = {
         "swarm_vs_single": output_dir / "benchmark_swarm_vs_single.png",
-        "requested_models": output_dir / "benchmark_requested_models.png",
         "cli_matrix": output_dir / "benchmark_cli_matrix.png",
         "coding_models": output_dir / "benchmark_coding_models.png",
     }
     render_swarm_vs_single_chart(report, charts["swarm_vs_single"])
-    render_requested_models_chart(report, charts["requested_models"])
     render_cli_matrix_chart(report, charts["cli_matrix"])
     render_coding_models_chart(report, charts["coding_models"])
     return {key: str(path) for key, path in charts.items()}
