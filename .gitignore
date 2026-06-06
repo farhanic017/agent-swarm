@@ -10,6 +10,7 @@ build/
 swarm_state/
 .understand-anything/
 .swarm_lessons.json
+.swarm_tmp_skills/
 config.json
 
 .env
