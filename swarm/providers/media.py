@@ -27,6 +27,12 @@ def media_assets(data: dict) -> list[dict]:
     raw_items = data.get("data")
     if raw_items is None:
         raw_items = data.get("assets") or data.get("output") or []
+    if not raw_items and any(key in data for key in ("task_id", "id", "status", "url")):
+        raw_items = [{
+            key: data[key]
+            for key in ("task_id", "id", "status", "url")
+            if key in data
+        }]
     if isinstance(raw_items, dict):
         raw_items = [raw_items]
 
@@ -47,6 +53,7 @@ def media_assets(data: dict) -> list[dict]:
             "mimeType",
             "revised_prompt",
             "id",
+            "task_id",
             "status",
         ):
             if key in item:

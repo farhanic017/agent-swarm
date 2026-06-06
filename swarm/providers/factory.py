@@ -11,8 +11,15 @@ from swarm.providers.elevenlabs import ElevenLabsProvider
 
 
 OPENAI_COMPATIBLE_ENDPOINTS = {
+    "moonshot": "https://api.moonshot.ai/v1",
     "openclaw": "http://localhost:7331/v1",
     "manus": "https://api.manus.im/v1",
+    "recraft": "https://external.api.recraft.ai/v1",
+    "kling": "https://api.klingapi.com",
+    "nvidia": "https://integrate.api.nvidia.com/v1",
+    "huggingface": "https://router.huggingface.co/v1",
+    "alibaba": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "zyphra": "https://api.zyphra.com/v1",
     "groq": "https://api.groq.com/openai/v1",
     "together": "https://api.together.xyz/v1",
     "perplexity": "https://api.perplexity.ai",

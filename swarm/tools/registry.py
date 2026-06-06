@@ -42,7 +42,11 @@ from swarm.core.workflow_plans import (
     build_app_tester_plan,
     build_backend_maker_plan,
     build_building_design_plan,
+    build_game_developer_plan,
+    build_hallucination_recovery_plan,
     build_job_finder_applier_plan,
+    build_n8n_workflow_plan,
+    build_social_media_manager_plan,
     build_web_scraper_plan,
 )
 
@@ -566,6 +570,49 @@ class ToolRegistry:
             parameters={
                 "type": "object",
                 "properties": {"prompt": {"type": "string"}, "framework": {"type": "string"}},
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_hallucination_recovery",
+            description="Plan long-session hallucination recovery with compaction, evidence pinning, assumption checks, and replacement-model memory.",
+            func=lambda session_summary, mode="long_session": json.dumps(
+                build_hallucination_recovery_plan(session_summary, mode),
+                indent=2,
+            ),
+            parameters={
+                "type": "object",
+                "properties": {"session_summary": {"type": "string"}, "mode": {"type": "string"}},
+                "required": ["session_summary"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_n8n_workflow",
+            description="Plan an n8n automation workflow with nodes, credentials, dry-run payloads, retries, schedules, and approval gates.",
+            func=lambda prompt, trigger="manual": json.dumps(build_n8n_workflow_plan(prompt, trigger), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"prompt": {"type": "string"}, "trigger": {"type": "string"}},
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_game_developer",
+            description="Plan a playable game build with engine choice, core loop, controls, assets, testing, and export checks.",
+            func=lambda prompt, engine="auto": json.dumps(build_game_developer_plan(prompt, engine), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"prompt": {"type": "string"}, "engine": {"type": "string"}},
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_social_media_manager",
+            description="Plan social media posting and management with drafts, creative prompts, approvals, scheduling, comments, and analytics.",
+            func=lambda prompt, platforms="auto": json.dumps(build_social_media_manager_plan(prompt, platforms), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"prompt": {"type": "string"}, "platforms": {"type": "string"}},
                 "required": ["prompt"],
             },
         ))

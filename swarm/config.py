@@ -10,11 +10,19 @@ PROVIDER_PRIORITY = [
     "azure",
     "openai",
     "anthropic",
+    "moonshot",
     "openclaw",
     "manus",
     "google",
     "openrouter",
     "elevenlabs",
+    "recraft",
+    "kling",
+    "nvidia",
+    "huggingface",
+    "alibaba",
+    "microsoft",
+    "zyphra",
     "groq",
     "together",
     "perplexity",
@@ -34,14 +42,22 @@ PROVIDER_ALIASES = {
     "azure-ai-foundry": "azure", "ai-foundry": "azure", "foundry": "azure",
     "openai": "openai",
     "anthropic": "anthropic", "anthropic-claude": "anthropic", "claude": "anthropic",
+    "moonshot": "moonshot", "moonshot-ai": "moonshot", "kimi": "moonshot", "kimi-ai": "moonshot",
     "openclaw": "openclaw", "open-claw": "openclaw", "claw": "openclaw",
     "manus": "manus", "manus-ai": "manus", "manusai": "manus",
     "google": "google", "google-ai": "google", "googleai": "google",
     "openrouter": "openrouter",
     "elevenlabs": "elevenlabs", "eleven-labs": "elevenlabs", "11labs": "elevenlabs",
+    "recraft": "recraft", "recraft-ai": "recraft",
+    "kling": "kling", "kling-ai": "kling", "klingapi": "kling",
+    "nvidia": "nvidia", "nvidia-nim": "nvidia", "nim": "nvidia",
+    "huggingface": "huggingface", "hugging-face": "huggingface", "hf": "huggingface",
+    "alibaba": "alibaba", "alibaba-cloud": "alibaba", "dashscope": "alibaba", "qwen": "alibaba",
+    "microsoft": "microsoft", "azure-ai": "microsoft", "azure-ai-inference": "microsoft",
+    "zyphra": "zyphra", "zonos": "zyphra",
     "groq": "groq",
     "together": "together", "together-ai": "together", "togetherai": "together",
-    "perplexity": "perplexity",
+    "perplexity": "perplexity", "purplexity": "perplexity",
     "cohere": "cohere", "cohere-ai": "cohere",
     "mistral": "mistral", "mistral-ai": "mistral",
     "deepseek": "deepseek",
@@ -66,6 +82,8 @@ IMAGE_GENERATION_KEYWORDS = [
     "google-flow",
     "googleflow",
     "flux",
+    "recraft",
+    "recraftv",
     "imagine",
     "nano-banana",
     "nanobanana",
@@ -85,6 +103,8 @@ VIDEO_GENERATION_KEYWORDS = [
     "runway",
     "kling",
     "kling-ai",
+    "kling-v",
+    "kling-video",
     "seedance",
     "sedance",
     "highfield",
@@ -108,6 +128,8 @@ TEXT_TO_SPEECH_KEYWORDS = [
     "speech",
     "voice",
     "eleven",
+    "zyphra",
+    "zonos",
 ]
 VISION_KEYWORDS = [
     "vision",
@@ -120,6 +142,7 @@ VISION_KEYWORDS = [
     "googleflow",
     "veo",
     "claude",
+    "kimi",
     "image",
     "video",
     "scout",
@@ -279,6 +302,15 @@ class SwarmConfig:
                 api_key=anthropic_key,
             )
 
+        moonshot_key = os.environ.get("MOONSHOT_API_KEY") or os.environ.get("KIMI_API_KEY")
+        if moonshot_key:
+            moonshot_model = os.environ.get("MOONSHOT_MODEL") or os.environ.get("KIMI_MODEL") or "kimi-k2.6"
+            providers["moonshot"] = ProviderConfig(
+                api_key=moonshot_key,
+                endpoint=os.environ.get("MOONSHOT_BASE_URL") or os.environ.get("KIMI_BASE_URL") or "https://api.moonshot.ai/v1",
+                models={moonshot_model: {"modalities": ["chat", "reasoning", "coding"]}},
+            )
+
         openclaw_endpoint = os.environ.get("OPENCLAW_BASE_URL") or os.environ.get("OPENCLAW_ENDPOINT")
         if openclaw_endpoint:
             openclaw_model = os.environ.get("OPENCLAW_MODEL", "openclaw/default")
@@ -307,6 +339,75 @@ class SwarmConfig:
                     os.environ.get("ELEVENLABS_STT_MODEL", "scribe_v1"): {"modalities": ["speech_to_text"]},
                     os.environ.get("ELEVENLABS_TTS_MODEL", "eleven_multilingual_v2"): {"modalities": ["text_to_speech"]},
                 },
+            )
+
+        recraft_key = os.environ.get("RECRAFT_API_KEY") or os.environ.get("RECRAFT_API_TOKEN")
+        if recraft_key:
+            providers["recraft"] = ProviderConfig(
+                api_key=recraft_key,
+                endpoint=os.environ.get("RECRAFT_BASE_URL", "https://external.api.recraft.ai/v1"),
+                models={os.environ.get("RECRAFT_IMAGE_MODEL", "recraftv4_1"): {"modalities": ["image_generation"]}},
+            )
+
+        kling_key = os.environ.get("KLING_API_KEY") or os.environ.get("KLINGAI_API_KEY")
+        if kling_key:
+            providers["kling"] = ProviderConfig(
+                api_key=kling_key,
+                endpoint=os.environ.get("KLING_BASE_URL", "https://api.klingapi.com"),
+                models={os.environ.get("KLING_VIDEO_MODEL", "kling-v2.6-pro"): {"modalities": ["video_generation"]}},
+            )
+
+        nvidia_key = os.environ.get("NVIDIA_API_KEY") or os.environ.get("NVIDIA_NIM_API_KEY")
+        if nvidia_key:
+            providers["nvidia"] = ProviderConfig(
+                api_key=nvidia_key,
+                endpoint=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+                models={os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.3-nemotron-super-49b-v1"): {"modalities": ["chat", "reasoning"]}},
+            )
+
+        huggingface_key = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+        if huggingface_key:
+            providers["huggingface"] = ProviderConfig(
+                api_key=huggingface_key,
+                endpoint=os.environ.get("HUGGINGFACE_BASE_URL", "https://router.huggingface.co/v1"),
+                models={
+                    os.environ.get("HUGGINGFACE_MODEL", "openai/gpt-oss-120b:fastest"): {"modalities": ["chat", "reasoning"]},
+                    os.environ.get("HUGGINGFACE_IMAGE_MODEL", "black-forest-labs/FLUX.1-dev"): {"modalities": ["image_generation"]},
+                    os.environ.get("HUGGINGFACE_VIDEO_MODEL", "Wan-AI/Wan2.2-T2V-A14B"): {"modalities": ["video_generation"]},
+                },
+            )
+
+        alibaba_key = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("ALIBABA_API_KEY")
+        if alibaba_key:
+            providers["alibaba"] = ProviderConfig(
+                api_key=alibaba_key,
+                endpoint=os.environ.get("DASHSCOPE_BASE_URL") or os.environ.get("ALIBABA_BASE_URL") or "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                models={os.environ.get("ALIBABA_MODEL", "qwen-plus"): {"modalities": ["chat", "reasoning"]}},
+            )
+
+        perplexity_key = os.environ.get("PERPLEXITY_API_KEY") or os.environ.get("PURPLEXITY_API_KEY")
+        if perplexity_key:
+            providers["perplexity"] = ProviderConfig(
+                api_key=perplexity_key,
+                endpoint=os.environ.get("PERPLEXITY_BASE_URL", "https://api.perplexity.ai"),
+                models={os.environ.get("PERPLEXITY_MODEL", "sonar-pro"): {"modalities": ["chat", "research"]}},
+            )
+
+        microsoft_key = os.environ.get("MICROSOFT_AI_API_KEY") or os.environ.get("AZURE_AI_FOUNDRY_API_KEY")
+        microsoft_endpoint = os.environ.get("MICROSOFT_AI_ENDPOINT") or os.environ.get("AZURE_AI_FOUNDRY_ENDPOINT")
+        if microsoft_key and microsoft_endpoint:
+            providers["microsoft"] = ProviderConfig(
+                api_key=microsoft_key,
+                endpoint=microsoft_endpoint,
+                models={os.environ.get("MICROSOFT_MODEL", "phi-4"): {"modalities": ["chat", "reasoning"]}},
+            )
+
+        zyphra_key = os.environ.get("ZYPHRA_API_KEY")
+        if zyphra_key:
+            providers["zyphra"] = ProviderConfig(
+                api_key=zyphra_key,
+                endpoint=os.environ.get("ZYPHRA_BASE_URL", "https://api.zyphra.com/v1"),
+                models={os.environ.get("ZYPHRA_TTS_MODEL", "zonos-v0.1-transformer"): {"modalities": ["text_to_speech"]}},
             )
 
         groq_key = os.environ.get("GROQ_API_KEY")

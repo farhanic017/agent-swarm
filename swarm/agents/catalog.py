@@ -48,6 +48,31 @@ APP_BUILD_TOOLS = (
     "plan_backend_maker",
 )
 
+LONG_SESSION_TOOLS = (
+    "plan_hallucination_recovery",
+    "compact_context",
+    "plan_docs_integration",
+)
+
+AUTOMATION_WORKFLOW_TOOLS = (
+    "plan_n8n_workflow",
+    "plan_swarm_pipeline",
+    "plan_mcp_connectors",
+)
+
+GAME_DEV_TOOLS = (
+    "plan_game_developer",
+    "plan_app_tester",
+    "plan_animation",
+    "plan_3d_design_model",
+)
+
+SOCIAL_MEDIA_TOOLS = (
+    "plan_social_media_manager",
+    "plan_mockup_video",
+    "plan_voice_workflow",
+)
+
 HERMES_EVOLUTION_TOOLS = (
     "plan_hermes_evolution",
     "propose_hermes_skill",
@@ -121,6 +146,10 @@ AGENT_MODEL_PREFERENCES = {
     "job_finder": "reasoning",
     "building_designer": "vision",
     "animator": "video_generation",
+    "hallucination_guard": "reasoning",
+    "n8n_workflow_creator": "coding",
+    "game_developer": "coding",
+    "social_media_manager": "chat",
     "reviewer": "coding",
     "ai_reviewer": "coding",
     "security": "reasoning",
@@ -149,6 +178,10 @@ AGENT_SUB_AGENT_ROLES = {
     "web_scraper": ("researcher", "analytics", "security"),
     "job_finder": ("web_scraper", "writer", "legal"),
     "building_designer": ("design", "animator", "figma_controller", "ux_research"),
+    "hallucination_guard": ("checkpoint_manager", "vector_memory", "documentation", "testing"),
+    "n8n_workflow_creator": ("webhook_listener", "api_explorer", "security", "documentation"),
+    "game_developer": ("storyboard", "animator", "coder", "app_tester", "performance_leaderboard"),
+    "social_media_manager": ("marketing", "brand_consistency", "video_editor", "analytics_interpreter"),
     "reviewer": ("ai_reviewer", "testing", "security", "coder"),
     "ai_reviewer": ("security", "testing", "debugging", "coder"),
     "security": ("testing", "debugging", "legal"),
@@ -296,6 +329,10 @@ AGENT_SPECS: tuple[AgentSpec, ...] = (
     AgentSpec("photo_editor", "Image Generation & Edit Agent", "see", "creative", "Plans, generates, and critiques image assets, crops, retouching, masking, restoration, and asset polish.", ("image generation", "image critique", "retouch plans", "masking guidance", "asset QA"), DESIGN_3D_TOOLS + COMMON_COLLAB_TOOLS, 0.3, "image_generation"),
     AgentSpec("video_editor", "Video Generation & Edit Agent", "see", "creative", "Plans, generates, and critiques video clips, cuts, pacing, captions, transitions, color, thumbnails, and video polish.", ("video generation", "story pacing", "caption review", "timeline QA", "motion notes"), ANIMATION_TOOLS + DESIGN_3D_TOOLS + COMMON_COLLAB_TOOLS, 0.3, "video_generation"),
     AgentSpec("animator", "Animator Agent", "design", "creative", "Plans and reviews 2D, 3D, UI, logo, product, character, mockup, and video animations with storyboard, timing, keyframes, preview render, and export QA.", ("storyboards", "keyframes", "motion arcs", "camera moves", "animation QA"), ANIMATION_TOOLS + DESIGN_3D_TOOLS + COMMON_COLLAB_TOOLS, 0.28, "video_generation"),
+    AgentSpec("hallucination_guard", "Hallucination Recovery Agent", "act", "core", "Keeps long sessions grounded by compacting verified state, separating facts from assumptions, routing uncertain claims to evidence checks, and preventing stuck or hallucinated continuation.", ("long-session recovery", "fact vs assumption checks", "evidence pinning", "replacement memory", "anti-stuck routing"), LONG_SESSION_TOOLS + COMMON_COLLAB_TOOLS, 0.1, "reasoning"),
+    AgentSpec("n8n_workflow_creator", "n8n Workflow Creator Agent", "act", "integrations", "Creates approval-gated n8n workflow plans with triggers, nodes, credentials, retries, dry-run payloads, and importable workflow JSON notes.", ("n8n nodes", "workflow JSON", "webhooks", "credential checklist", "dry-run validation"), AUTOMATION_WORKFLOW_TOOLS + COMMON_COLLAB_TOOLS, 0.18, "coding"),
+    AgentSpec("game_developer", "Game Developer Agent", "code", "creative", "Builds playable game plans and prototypes across engine choice, mechanics, controls, assets, levels, performance, testing, and export checks.", ("game loops", "controls", "level design", "playtesting", "export QA"), GAME_DEV_TOOLS + CODE_TOOLS + BROWSER_TOOLS + COMMON_COLLAB_TOOLS, 0.24, "coding"),
+    AgentSpec("social_media_manager", "Social Media Poster & Manager", "act", "business", "Plans, drafts, schedules, posts after approval, monitors, and analyzes social campaigns across major platforms.", ("content calendar", "post drafts", "asset prompts", "approval queue", "engagement analytics"), SOCIAL_MEDIA_TOOLS + RESEARCH_TOOLS + COMMON_COLLAB_TOOLS, 0.28, "chat"),
     AgentSpec("voice_transcriber", "Voice-to-Text Agent", "see", "creative", "Plans and runs speech-to-text transcription, diarization handoff, subtitle drafts, and transcript cleanup.", ("speech to text", "audio transcription", "subtitle draft", "speaker note cleanup"), COMMON_COLLAB_TOOLS, 0.2, "speech_to_text"),
     AgentSpec("voice_generator", "Voice Generation Agent", "design", "creative", "Plans and runs text-to-speech voiceovers, narration drafts, voice style prompts, and audio export QA.", ("text to speech", "voiceover generation", "narration", "audio export QA"), COMMON_COLLAB_TOOLS, 0.25, "text_to_speech"),
     AgentSpec("figma_controller", "Figma Control Agent", "design", "creative", "Coordinates Figma-oriented layout, component, and handoff changes.", ("component control", "design QA", "handoff specs", "browser prototype checks"), BROWSER_TOOLS + COMMON_COLLAB_TOOLS, 0.25, "vision"),

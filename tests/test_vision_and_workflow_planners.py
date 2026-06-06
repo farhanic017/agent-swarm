@@ -7,7 +7,11 @@ from swarm.core.workflow_plans import (
     build_app_tester_plan,
     build_backend_maker_plan,
     build_building_design_plan,
+    build_game_developer_plan,
+    build_hallucination_recovery_plan,
     build_job_finder_applier_plan,
+    build_n8n_workflow_plan,
+    build_social_media_manager_plan,
     build_web_scraper_plan,
 )
 from swarm.tools.registry import ToolRegistry
@@ -79,6 +83,10 @@ def test_workflow_planners_cover_requested_features():
     tester = build_app_tester_plan("SaaS dashboard")
     builder = build_app_builder_plan("build a CRM")
     backend = build_backend_maker_plan("make auth and billing API", "FastAPI")
+    hallucination = build_hallucination_recovery_plan("long coding session with unclear previous fixes")
+    n8n = build_n8n_workflow_plan("post approved launch updates to Slack and LinkedIn", "webhook")
+    game = build_game_developer_plan("make a browser platformer", "Phaser")
+    social = build_social_media_manager_plan("launch Agent Swarm v8", "LinkedIn,X/Twitter")
 
     assert scraper["guardrails"]["prefer_official_api"]
     assert jobs["guardrails"]["user_approval_before_submit"]
@@ -86,6 +94,10 @@ def test_workflow_planners_cover_requested_features():
     assert "accessibility" in tester["test_types"]
     assert "backend_maker" in builder["sub_agents"]
     assert backend["guardrails"]["no_hardcoded_secrets"]
+    assert hallucination["guardrails"]["require_evidence_for_claims"]
+    assert n8n["guardrails"]["dry_run_first"]
+    assert "app_tester" in game["sub_agents"]
+    assert social["guardrails"]["approval_before_posting"]
 
 
 def test_registry_workflow_tools_return_json_strings():
@@ -97,6 +109,10 @@ def test_registry_workflow_tools_return_json_strings():
     assert "app_tester" in registry.get("plan_app_tester").func("mobile app")
     assert "app_builder" in registry.get("plan_app_builder").func("todo app")
     assert "backend_maker" in registry.get("plan_backend_maker").func("api")
+    assert "hallucination_recovery" in registry.get("plan_hallucination_recovery").func("long session drift")
+    assert "n8n_workflow_creator" in registry.get("plan_n8n_workflow").func("create webhook automation")
+    assert "game_developer" in registry.get("plan_game_developer").func("make a game")
+    assert "social_media_poster_manager" in registry.get("plan_social_media_manager").func("post launch updates")
     assert "delegate_to_temporary_vision_model" in registry.get("plan_temporary_vision").func(
         "coder",
         "qwen-coder",

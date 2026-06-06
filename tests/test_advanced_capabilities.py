@@ -30,6 +30,10 @@ def test_advanced_capability_directory_covers_requested_categories():
     }.issubset(categories)
     assert any(item["key"] == "codex_caching" for item in capabilities)
     assert any(item["key"] == "preference_memory" for item in capabilities)
+    assert any(item["key"] == "hallucination_recovery" for item in capabilities)
+    assert any(item["key"] == "n8n_workflow_creator" for item in capabilities)
+    assert any(item["key"] == "game_developer" for item in capabilities)
+    assert any(item["key"] == "social_media_manager" for item in capabilities)
 
 
 def test_advanced_capability_planner_selects_relevant_agents_and_gates():
@@ -40,6 +44,18 @@ def test_advanced_capability_planner_selects_relevant_agents_and_gates():
     assert "web_scraper" in plan["helper_agents"]
     assert "external writes or submissions" in plan["approval_gates"]
     assert "execute only approved actions with scoped tools and checkpoints" in plan["phases"]
+
+
+def test_new_capability_planner_routes_requested_features():
+    hallucination = plan_advanced_capability("fix hallucination and context drift in long sessions", "auto")
+    n8n = plan_advanced_capability("create an n8n workflow for launch automation", "auto")
+    game = plan_advanced_capability("build a playable browser game", "auto")
+    social = plan_advanced_capability("schedule social media posts and manage comments", "auto")
+
+    assert hallucination["primary_agent"] == "hallucination_guard"
+    assert n8n["primary_agent"] == "n8n_workflow_creator"
+    assert game["primary_agent"] == "game_developer"
+    assert social["primary_agent"] == "social_media_manager"
 
 
 def test_auto_learner_extracts_user_patterns_without_silent_durable_memory():
@@ -150,10 +166,18 @@ def test_new_specialist_agents_are_available():
         "cloud_deploy",
         "typescript_sdk",
         "rest_api_wrapper",
+        "hallucination_guard",
+        "n8n_workflow_creator",
+        "game_developer",
+        "social_media_manager",
     }
 
     assert required.issubset(agents)
     assert agents["auto_learner"].pillar == "act"
     assert agents["test_generator"].model_preference == "coding"
     assert agents["brand_consistency"].model_preference == "vision"
+    assert agents["hallucination_guard"].model_preference == "reasoning"
+    assert agents["n8n_workflow_creator"].model_preference == "coding"
+    assert agents["game_developer"].model_preference == "coding"
+    assert agents["social_media_manager"].model_preference == "chat"
     assert "plan_advanced_capability" in agents["secret_scanner"].tools

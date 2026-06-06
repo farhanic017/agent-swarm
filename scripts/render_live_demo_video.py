@@ -69,6 +69,10 @@ AGENTS = [
     ("job_finder", "act", AMBER),
     ("building_designer", "design", PINK),
     ("animator", "design", PURPLE),
+    ("hallucination_guard", "act", RED),
+    ("n8n_workflow", "act", GREEN),
+    ("game_developer", "code", BLUE),
+    ("social_manager", "act", AMBER),
     ("photo_editor", "see", PINK),
     ("video_editor", "see", PURPLE),
     ("voice_transcriber", "see", BLUE),
@@ -80,11 +84,13 @@ AGENTS = [
 
 FEATURES = [
     "20+ agents", "4 pillars", "always-on council", "A/B voting", "real-time dashboard",
-    "live code typing", "sub-agents", "provider fallback", "local/MCP/cloud", "OpenCode/Qwen/Mistral",
+    "live code typing", "sub-agents", "provider fallback", "local/MCP/cloud", "OpenCode/Qwen/Mistral/Kimi",
     "browser control", "web scraper", "job applier", "app builder", "backend maker", "app tester",
-    "image/video generation", "Google Flow", "Omni", "Veo", "photo/video editors", "voice STT/TTS", "Figma + Blender", "heavy 3D models", "mockup video",
+    "image/video generation", "Google Flow", "Omni", "Veo", "Recraft", "Kling", "NVIDIA", "Zyphra", "Hugging Face", "Alibaba", "Perplexity", "Microsoft",
+    "photo/video editors", "voice STT/TTS", "Figma + Blender", "heavy 3D models", "mockup video",
     "building design", "temporary vision", "benchmark charts", "temporary skills", "MCP marketplace", "Graphify", "Obsidian",
-    "scoped file security", "AI reviewer", "XSS checks", "/compact memory", "Hermes self-evolution",
+    "scoped file security", "AI reviewer", "XSS checks", "/compact memory", "hallucination recovery", "n8n workflows",
+    "game developer", "social poster/manager", "Hermes self-evolution",
 ]
 
 
@@ -216,13 +222,13 @@ def scene_council(draw, local: int):
 def scene_agents(draw, local: int):
     draw_text(draw, (58, 110), "Specialists and sub-agents work in parallel", fnt=F_H1)
     for idx, (name, pillar, color) in enumerate(AGENTS):
-        row = idx % 10
-        col = idx // 10
-        x = 70 + col * 575
-        y = 170 + row * 39
-        draw_round(draw, (x, y, x + 500, y + 29), 8, PANEL, color if (local // 8 + idx) % 3 == 0 else (45, 55, 75))
+        row = idx % 8
+        col = idx // 8
+        x = 56 + col * 405
+        y = 160 + row * 47
+        draw_round(draw, (x, y, x + 360, y + 31), 8, PANEL, color if (local // 8 + idx) % 3 == 0 else (45, 55, 75))
         draw_text(draw, (x + 14, y + 6), name, fnt=F_TINY)
-        draw_text(draw, (x + 375, y + 6), pillar, fill=color, fnt=F_TINY)
+        draw_text(draw, (x + 286, y + 6), pillar, fill=color, fnt=F_TINY)
     draw_text(draw, (413, 565), "spawn_agent lets any specialist delegate focused work", fill=MUTED, fnt=F_BODY)
 
 
@@ -230,25 +236,28 @@ def scene_connected_graph(draw, local: int):
     draw_text(draw, (58, 104), "Live graph: agents verify, connect, then publish", fnt=F_H1)
     draw_text(draw, (62, 145), "Every specialist verifies its slice, connects artifacts, then passes evidence to master review and publish.", fill=MUTED, fnt=F_SMALL)
     graph_agents = [
-        ("coder", "mistral", 92, 208, GREEN),
+        ("coder", "kimi", 92, 208, GREEN),
         ("reviewer", "openrouter", 92, 288, GREEN),
         ("security", "fireworks", 92, 368, RED),
         ("testing", "groq", 92, 448, BLUE),
         ("debugging", "qwen", 92, 528, GREEN),
-        ("researcher", "azure", 360, 205, BLUE),
-        ("analytics", "zai", 360, 295, GREEN),
+        ("researcher", "microsoft", 360, 205, BLUE),
+        ("analytics", "alibaba", 360, 295, GREEN),
         ("ux_research", "cloudflare", 360, 385, BLUE),
-        ("photo_editor", "vision", 360, 475, PINK),
+        ("photo_editor", "recraft", 360, 475, PINK),
         ("writer", "claude", 632, 205, PURPLE),
         ("localization", "mistral", 632, 295, PURPLE),
         ("design", "gemini", 632, 385, PURPLE),
         ("figma_controller", "browser", 632, 475, PINK),
-        ("marketing", "google-ai", 1002, 205, AMBER),
-        ("finance", "azure", 1002, 285, AMBER),
+        ("marketing", "perplexity", 1002, 205, AMBER),
+        ("finance", "nvidia", 1002, 285, AMBER),
         ("trading", "mcp", 1002, 365, AMBER),
-        ("product_manager", "openrouter", 1002, 445, AMBER),
+        ("product_manager", "huggingface", 1002, 445, AMBER),
         ("master_review", "verify", 1002, 525, GREEN),
         ("publish", "release", 1162, 365, BLUE),
+        ("n8n_workflow", "nodes", 1162, 215, GREEN),
+        ("game_developer", "kling", 1162, 285, BLUE),
+        ("social_manager", "queue", 1162, 445, AMBER),
     ]
     positions = {name: (x, y) for name, _, x, y, _ in graph_agents}
     edges = [
@@ -260,7 +269,8 @@ def scene_connected_graph(draw, local: int):
         ("design", "finance"), ("design", "trading"), ("design", "product_manager"),
         ("figma_controller", "master_review"), ("security", "master_review"), ("testing", "master_review"),
         ("product_manager", "master_review"), ("master_review", "publish"),
-        ("hermes", "design"),
+        ("hermes", "design"), ("n8n_workflow", "master_review"), ("game_developer", "master_review"),
+        ("social_manager", "master_review"), ("design", "game_developer"), ("marketing", "social_manager"),
     ]
     positions["hermes"] = (632, 535)
     for idx, (source, target) in enumerate(edges):
@@ -294,18 +304,18 @@ def scene_connected_graph(draw, local: int):
 
 def scene_routing(draw, local: int):
     panel(draw, (54, 108, 462, 542), "Smart AI Selection", [
-        "coding -> Codestral/Qwen/local",
-        "reasoning -> Opus/GPT/Hermes",
+        "coding -> Codestral/Qwen/Kimi/local",
+        "reasoning -> Opus/GPT/Hermes/NVIDIA",
         "vision -> Gemini/vision bridge",
-        "voice -> ElevenLabs/STT/TTS",
-        "media -> image/video generators",
+        "voice -> ElevenLabs/Zyphra/STT/TTS",
+        "media -> Recraft/Kling/HF",
         "fallback keeps memory once",
     ], GREEN)
     routes = [
         ("Master", "cloud reasoning", PURPLE),
         ("Coder", "coding model", GREEN),
         ("Browser", "MCP + browser", BLUE),
-        ("Media", "image/video", PINK),
+        ("Media", "Recraft/Kling", PINK),
         ("Cheap checks", "local model", AMBER),
     ]
     for idx, (role, model, color) in enumerate(routes):
@@ -353,23 +363,24 @@ def scene_tools(draw, local: int):
         ("MCP", ["Supabase", "Figma", "Drive", "Stripe", "Obsidian"], PURPLE),
         ("CLI", ["OpenCode", "Qwen", "Mistral", "Aider", "Windsurf"], GREEN),
         ("Workflow", ["scrape", "apply jobs", "build app", "test app", "backend"], AMBER),
+        ("Automation", ["n8n nodes", "dry-run JSON", "game build", "social queue", "approval"], RED),
     ]
     for idx, (title, items, color) in enumerate(groups):
-        x = 70 + (idx % 2) * 590
-        y = 118 + (idx // 2) * 220
-        panel(draw, (x, y, x + 520, y + 175), title, [f"- {item}" for item in items], color)
+        x = 56 + (idx % 3) * 410
+        y = 112 + (idx // 3) * 218
+        panel(draw, (x, y, x + 370, y + 198), title, [f"- {item}" for item in items], color)
     draw_text(draw, (330, 560), "Plan mode asks detailed questions only when vision/context is missing", fill=MUTED, fnt=F_BODY)
 
 
 def scene_media(draw, local: int):
     draw_text(draw, (58, 106), "Creative stack: image, video, voice, design, 3D", fnt=F_H1)
     items = [
-        ("Image generation", "Omni / Imagen / Flow assets", PINK),
-        ("Video generation", "Google Flow / Veo / Kling", PURPLE),
-        ("Voice", "STT + TTS + ElevenLabs", GREEN),
+        ("Image generation", "Recraft / Omni / HF / Flow", PINK),
+        ("Video generation", "Kling / Google Flow / Veo", PURPLE),
+        ("Voice", "STT + TTS + Zyphra", GREEN),
         ("Figma", "layouts + prototype checks", BLUE),
-        ("Blender", "heavy + lightweight 3D", AMBER),
-        ("Animator", "mockup videos + keyframes", RED),
+        ("Blender + model APIs", "heavy 3D + Kimi/NVIDIA", AMBER),
+        ("Animator", "mockups + Alibaba/Microsoft", RED),
     ]
     for idx, (title, sub, color) in enumerate(items):
         x = 80 + (idx % 3) * 390
@@ -384,11 +395,12 @@ def scene_security(draw, local: int):
         "AI reviewer checks each agent",
         "XSS and logic-risk detection",
         "Scoped file access blocks secrets",
+        "Hallucination guard verifies facts",
         "/compact preserves architecture",
         "Token budget limits overhead",
         "Temporary skills clean up",
     ], RED)
-    checks = ["security", "performance", "logic", "a11y", "secrets", "tests"]
+    checks = ["security", "performance", "logic", "hallucination", "secrets", "tests"]
     for idx, check in enumerate(checks):
         x = 660 + (idx % 2) * 230
         y = 155 + (idx // 2) * 105
@@ -422,22 +434,23 @@ def scene_hermes(draw, local: int):
 def scene_finish(draw, local: int):
     draw_text(draw, (96, 128), "Aggressive verification", fnt=F_TITLE)
     cards = [
-        ("pytest", "312 passed", GREEN),
-        ("warnings", "312 passed", GREEN),
+        ("pytest", "318 passed", GREEN),
+        ("warnings", "clean", GREEN),
         ("all CLIs", "shown", BLUE),
-        ("feature benchmark", "15/15 passed", PURPLE),
+        ("feature benchmark", "16/16 passed", PURPLE),
         ("OpenCode", "6/6", AMBER),
         ("Qwen + Aider", "OK", PINK),
-        ("Codex", "blocked locally", RED),
+        ("Codex", "OK", GREEN),
         ("Gemini", "version OK", BLUE),
+        ("n8n/game/social", "OK", AMBER),
         ("charts", "generated", GREEN),
     ]
     for idx, (title, value, color) in enumerate(cards):
         x = 88 + (idx % 3) * 382
-        y = 226 + (idx // 3) * 112
-        draw_round(draw, (x, y, x + 320, y + 78), 14, PANEL, color, 2)
-        draw_text(draw, (x + 20, y + 13), title, fill=MUTED, fnt=F_SMALL)
-        draw_text(draw, (x + 20, y + 40), value, fill=color, fnt=F_SMALL if len(value) > 12 else F_H2)
+        y = 198 + (idx // 3) * 90
+        draw_round(draw, (x, y, x + 320, y + 66), 14, PANEL, color, 2)
+        draw_text(draw, (x + 20, y + 10), title, fill=MUTED, fnt=F_SMALL)
+        draw_text(draw, (x + 20, y + 34), value, fill=color, fnt=F_SMALL if len(value) > 12 else F_H2)
 
 
 SCENES = [

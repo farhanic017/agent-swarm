@@ -26,6 +26,13 @@ def test_media_app_registry_includes_requested_apps_and_mockup_video():
     assert "Google Flow" in names
     assert "Google Veo" in names
     assert "Omni Image/Video" in names
+    assert "Recraft" in names
+    assert "NVIDIA NIM" in names
+    assert "Zyphra" in names
+    assert "Hugging Face" in names
+    assert "Alibaba DashScope" in names
+    assert "Perplexity" in names
+    assert "Microsoft Azure AI" in names
     assert "Imagine" in names
     assert "Seedance" in names
     assert "Highfield" in names

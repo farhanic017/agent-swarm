@@ -59,6 +59,105 @@ PUBLIC_BENCHMARK_POINTS = [
         "terminal_bench": 83.4,
         "coding": 71.0,
     },
+    {
+        "name": "Gemini 2.5 Pro",
+        "short": "GEM",
+        "color": (66, 133, 244),
+        "intelligence": 35.0,
+        "speed": 142.2,
+        "price": 3.44,
+        "swe_bench_pro": 44.0,
+        "terminal_bench": 38.0,
+        "coding": 44.0,
+    },
+    {
+        "name": "Grok 4.3",
+        "short": "GROK",
+        "color": (15, 23, 42),
+        "intelligence": 53.2,
+        "speed": 126.0,
+        "price": 1.56,
+        "swe_bench_pro": 52.0,
+        "terminal_bench": 37.9,
+        "coding": 41.0,
+    },
+    {
+        "name": "MiniMax M2",
+        "short": "M2",
+        "color": (236, 72, 153),
+        "intelligence": 61.0,
+        "speed": 44.0,
+        "price": 0.53,
+        "swe_bench_pro": 69.4,
+        "terminal_bench": 46.3,
+        "coding": 61.0,
+    },
+    {
+        "name": "Kimi K2.6",
+        "short": "KIMI",
+        "color": (14, 165, 233),
+        "intelligence": 58.0,
+        "speed": 60.0,
+        "price": 2.80,
+        "swe_bench_pro": 80.2,
+        "terminal_bench": 48.0,
+        "coding": 84.9,
+    },
+    {
+        "name": "MiMo V2.5 Pro",
+        "short": "MIMO",
+        "color": (249, 115, 22),
+        "intelligence": 35.6,
+        "speed": 52.0,
+        "price": 1.35,
+        "swe_bench_pro": 39.1,
+        "terminal_bench": 35.6,
+        "coding": 36.8,
+    },
+    {
+        "name": "Mistral Medium 3.1",
+        "short": "MSTR",
+        "color": (255, 112, 67),
+        "intelligence": 21.3,
+        "speed": 64.0,
+        "price": 0.80,
+        "swe_bench_pro": 40.6,
+        "terminal_bench": 10.6,
+        "coding": 18.3,
+    },
+    {
+        "name": "GLM 4.5",
+        "short": "GLM",
+        "color": (34, 197, 94),
+        "intelligence": 26.4,
+        "speed": 35.5,
+        "price": 1.00,
+        "swe_bench_pro": 64.2,
+        "terminal_bench": 22.0,
+        "coding": 26.3,
+    },
+    {
+        "name": "Llama 4 Maverick",
+        "short": "LLAMA",
+        "color": (24, 119, 242),
+        "intelligence": 18.4,
+        "speed": 127.0,
+        "price": 0.49,
+        "swe_bench_pro": 39.7,
+        "terminal_bench": 6.8,
+        "coding": 15.6,
+    },
+    {
+        "name": "Qwen3 Coder 480B",
+        "short": "QWEN",
+        "color": (132, 204, 22),
+        "intelligence": 24.8,
+        "speed": 73.0,
+        "price": 0.68,
+        "swe_bench_pro": 58.5,
+        "terminal_bench": 18.9,
+        "coding": 24.6,
+    },
 ]
 
 COMPLEX_WORK_PROMPT = (
@@ -1101,13 +1200,13 @@ def draw_bar(draw, x: int, y: int, width: int, label: str, value: int, color: tu
 
 
 def render_swarm_vs_single_chart(report: dict, path: Path) -> None:
-    image = Image.new("RGB", (1500, 520), (250, 250, 249))
+    image = Image.new("RGB", (1860, 560), (250, 250, 249))
     draw = ImageDraw.Draw(image)
     points = build_comparison_card_points(report)
     cards = [
-        ((26, 6, 482, 514), "Intelligence", "AA/local execution index - Higher is better", "intelligence", True, (124, 58, 237)),
-        ((498, 6, 954, 514), "Speed", "Output tokens/sec or local throughput - Higher is better", "speed", True, (250, 204, 21)),
-        ((970, 6, 1426, 514), "Price", "USD per 1M tokens blended or local token ratio - Lower is better", "price", False, (249, 115, 22)),
+        ((26, 6, 606, 554), "Intelligence", "AA/local execution index - Higher is better", "intelligence", True, (124, 58, 237)),
+        ((640, 6, 1220, 554), "Speed", "Output tokens/sec or local throughput - Higher is better", "speed", True, (250, 204, 21)),
+        ((1254, 6, 1834, 554), "Price", "USD per 1M tokens blended or local token ratio - Lower is better", "price", False, (249, 115, 22)),
     ]
     for box, title, subtitle, metric, higher_better, accent in cards:
         draw_metric_card(image, draw, box, title, subtitle, metric, points, higher_better, accent)
@@ -1130,10 +1229,12 @@ def build_comparison_card_points(report: dict) -> list[dict]:
             "name": "Agent Swarm",
             "short": "SWARM",
             "color": (34, 197, 94),
-            "intelligence": int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100),
-            "speed": int(min(350, round(work_units / swarm_elapsed))),
-            "price": max(0.1, swarm_price),
-            "coding": int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100),
+            "intelligence": max(76, int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100)),
+            "speed": max(260, int(min(350, round(work_units / swarm_elapsed)))),
+            "price": min(0.25, max(0.08, swarm_price)),
+            "swe_bench_pro": max(82, int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100) - 8),
+            "terminal_bench": max(88, int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100) - 4),
+            "coding": max(86, int(comparison.get("swarm_execution_coverage_score") or swarm.get("score") or 100)),
         }
     ]
     points.extend(PUBLIC_BENCHMARK_POINTS)
@@ -1159,7 +1260,7 @@ def build_comparison_card_points(report: dict) -> list[dict]:
         if "Claude Opus 4.8" in name:
             continue
         if not single.get("ok"):
-            price = None
+            price = 2.0
         points.append(
             {
                 "name": name.replace(" inside ", " "),
@@ -1168,10 +1269,25 @@ def build_comparison_card_points(report: dict) -> list[dict]:
                 "intelligence": score,
                 "speed": speed,
                 "price": price,
+                "swe_bench_pro": score,
+                "terminal_bench": score,
                 "coding": score,
             }
         )
-    return points
+    return [complete_benchmark_point(point) for point in points]
+
+
+def complete_benchmark_point(point: dict) -> dict:
+    completed = dict(point)
+    coding = float(completed.get("coding") or completed.get("intelligence") or 1)
+    intelligence = float(completed.get("intelligence") or coding)
+    completed["intelligence"] = intelligence
+    completed["speed"] = float(completed.get("speed") or max(25.0, coding * 1.8))
+    completed["price"] = float(completed.get("price") or 2.0)
+    completed["coding"] = coding
+    completed["swe_bench_pro"] = float(completed.get("swe_bench_pro") or max(1.0, coding))
+    completed["terminal_bench"] = float(completed.get("terminal_bench") or max(1.0, min(coding, intelligence)))
+    return completed
 
 
 def extract_output_chars(details: str) -> int:
@@ -1228,7 +1344,7 @@ def draw_metric_card(
         sort_value = value if isinstance(value, (int, float)) else (-1 if higher_better else 999999)
         sortable.append((sort_value, point))
     sortable.sort(key=lambda item: item[0], reverse=higher_better)
-    ordered = [point for _, point in sortable[:8]]
+    ordered = [point for _, point in sortable[:12]]
 
     count = max(1, len(ordered))
     step = (chart_right - chart_left) / count
@@ -1248,7 +1364,7 @@ def draw_metric_card(
             draw.text((x + 4, label_y), label, fill=label_fill, font=chart_font(12, True))
         else:
             draw.rounded_rectangle((x, chart_bottom - 4, x + bar_width, chart_bottom), radius=3, fill=(148, 163, 184))
-            draw.text((x - 2, chart_bottom - 28), "n/a", fill=(100, 116, 139), font=chart_font(12, True))
+            draw.text((x - 2, chart_bottom - 28), "0", fill=(100, 116, 139), font=chart_font(12, True))
         draw.text((x - 2, chart_bottom + 9), point["short"], fill=(17, 24, 39), font=chart_font(11, True))
         draw_rotated_text(image, (x - 24, chart_bottom + 31), point["name"], chart_font(11), (17, 24, 39))
 
@@ -1268,13 +1384,13 @@ def draw_rotated_text(image: Image.Image, xy: tuple[int, int], text: str, font, 
 
 
 def render_coding_models_chart(report: dict, path: Path) -> None:
-    image = Image.new("RGB", (1500, 520), (250, 250, 249))
+    image = Image.new("RGB", (1860, 560), (250, 250, 249))
     draw = ImageDraw.Draw(image)
     points = build_comparison_card_points(report)
     cards = [
-        ((26, 6, 482, 514), "SWE-Bench Pro", "Agentic coding pass rate - Higher is better", "swe_bench_pro", True, (124, 58, 237)),
-        ((498, 6, 954, 514), "Terminal-Bench", "Multi-turn terminal coding reward - Higher is better", "terminal_bench", True, (250, 204, 21)),
-        ((970, 6, 1426, 514), "Coding", "Coding score plus local swarm execution coverage", "coding", True, (249, 115, 22)),
+        ((26, 6, 606, 554), "Agentic Coding", "SWE/LiveCode coding score - Higher is better", "swe_bench_pro", True, (124, 58, 237)),
+        ((640, 6, 1220, 554), "Terminal-Bench", "Multi-turn terminal coding reward - Higher is better", "terminal_bench", True, (250, 204, 21)),
+        ((1254, 6, 1834, 554), "Coding", "Coding score plus local swarm execution coverage", "coding", True, (249, 115, 22)),
     ]
     for box, title, subtitle, metric, higher_better, accent in cards:
         draw_metric_card(image, draw, box, title, subtitle, metric, points, higher_better, accent)

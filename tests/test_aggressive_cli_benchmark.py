@@ -4,6 +4,8 @@ from pathlib import Path
 
 import scripts.run_aggressive_cli_benchmark as benchmark_script
 from scripts.run_aggressive_cli_benchmark import (
+    PUBLIC_BENCHMARK_POINTS,
+    build_comparison_card_points,
     compare_single_vs_swarm,
     default_opencode_targets,
     normalize_cli_version_result,
@@ -158,3 +160,23 @@ def test_benchmark_chart_renderer_writes_pngs(tmp_path):
 
     assert set(charts) == {"swarm_vs_single", "cli_matrix", "coding_models"}
     assert all(Path(path).exists() for path in charts.values())
+
+
+def test_public_benchmark_points_cover_popular_models_without_missing_metrics():
+    names = {point["name"] for point in PUBLIC_BENCHMARK_POINTS}
+    assert {
+        "Mistral Medium 3.1",
+        "Llama 4 Maverick",
+        "Gemini 2.5 Pro",
+        "GLM 4.5",
+        "MiMo V2.5 Pro",
+        "MiniMax M2",
+        "Kimi K2.6",
+        "Grok 4.3",
+        "Qwen3 Coder 480B",
+    }.issubset(names)
+
+    points = build_comparison_card_points({"comparison": {}, "swarm_complex_work": {"agent_count": 12, "sub_agent_count": 20}})
+    for point in points:
+        for metric in ("intelligence", "speed", "price", "swe_bench_pro", "terminal_bench", "coding"):
+            assert isinstance(point.get(metric), (int, float)), (point["name"], metric)

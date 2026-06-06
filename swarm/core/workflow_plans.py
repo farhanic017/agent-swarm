@@ -117,3 +117,92 @@ def build_backend_maker_plan(prompt: str, framework: str = "auto") -> dict:
             "migration_review": True,
         },
     }
+
+
+def build_hallucination_recovery_plan(session_summary: str, mode: str = "long_session") -> dict:
+    return {
+        "type": "hallucination_recovery",
+        "mode": mode,
+        "session_summary": session_summary,
+        "steps": [
+            "compact the long session into verified architecture, decisions, files, risks, and pending work",
+            "separate facts from assumptions and mark any unsupported claim as needs verification",
+            "pin source artifacts, tests, command outputs, screenshots, and council votes before continuing",
+            "route uncertain claims to researcher, testing, security, or vision specialists before implementation",
+            "resume from the verified state with replacement-model memory and a master review checkpoint",
+        ],
+        "guardrails": {
+            "never_continue_from_unverified_memory": True,
+            "require_evidence_for_claims": True,
+            "use_compaction_before_context_limit": True,
+            "replacement_model_gets_full_context_once": True,
+            "master_review_before_publish": True,
+        },
+    }
+
+
+def build_n8n_workflow_plan(prompt: str, trigger: str = "manual") -> dict:
+    return {
+        "type": "n8n_workflow_creator",
+        "prompt": prompt,
+        "trigger": trigger,
+        "steps": [
+            "identify trigger, credentials, data inputs, rate limits, and approval gates",
+            "design n8n nodes, branches, retries, error handling, and idempotency keys",
+            "map each external API call to scoped credentials and test-mode payloads first",
+            "generate an importable workflow JSON plan plus environment variable checklist",
+            "run dry-run validation before enabling schedules, webhooks, posts, or writes",
+        ],
+        "outputs": ["workflow_json_plan", "credential_checklist", "dry_run_payloads", "rollback_steps"],
+        "guardrails": {
+            "no_live_external_writes_without_approval": True,
+            "secrets_as_env_only": True,
+            "dry_run_first": True,
+            "rate_limit_backoff": True,
+        },
+    }
+
+
+def build_game_developer_plan(prompt: str, engine: str = "auto") -> dict:
+    return {
+        "type": "game_developer",
+        "prompt": prompt,
+        "engine": engine,
+        "steps": [
+            "define core loop, controls, camera, win/fail states, performance budget, and target platform",
+            "choose engine or stack such as Godot, Unity, Unreal, Three.js, Phaser, or Pygame",
+            "prototype gameplay systems, assets, levels, UI, audio, save state, and accessibility controls",
+            "run playtest, frame-rate, input, collision, state-machine, and export smoke checks",
+            "package build notes, controls, known issues, and future balancing tasks",
+        ],
+        "sub_agents": ["storyboard", "animator", "coder", "app_tester", "performance_leaderboard", "documentation"],
+        "guardrails": {
+            "keep_first_build_playable": True,
+            "budget_assets_for_user_hardware": True,
+            "test_controls_and_collisions": True,
+            "do_not_use_unlicensed_assets": True,
+        },
+    }
+
+
+def build_social_media_manager_plan(prompt: str, platforms: str = "auto") -> dict:
+    selected = [item.strip() for item in platforms.split(",") if item.strip()] if platforms != "auto" else []
+    return {
+        "type": "social_media_poster_manager",
+        "prompt": prompt,
+        "platforms": selected or ["X/Twitter", "LinkedIn", "Instagram", "TikTok", "YouTube Shorts", "Facebook"],
+        "steps": [
+            "turn the campaign goal into platform-specific copy, creative formats, hashtags, and posting windows",
+            "create approval-ready post drafts, image/video prompts, captions, alt text, and UTM tracking notes",
+            "schedule or publish only after user approval and platform credential validation",
+            "monitor comments, engagement, sentiment, and follow-up opportunities",
+            "summarize analytics and feed winning patterns back to marketing and Hermes skills",
+        ],
+        "outputs": ["content_calendar", "post_drafts", "asset_prompts", "approval_queue", "analytics_summary"],
+        "guardrails": {
+            "approval_before_posting": True,
+            "brand_consistency_review": True,
+            "no_spam_or_platform_policy_bypass": True,
+            "track_sources_and_claims": True,
+        },
+    }

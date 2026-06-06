@@ -106,3 +106,24 @@ def test_media_generation_agents_prefer_generation_models():
 
     assert by_agent["photo_editor"].model == "gpt-image-1"
     assert by_agent["video_editor"].model == "sora"
+
+
+def test_new_media_provider_models_route_to_matching_agents():
+    agents = [agent for agent in create_specialist_agents() if agent.name in {"photo_editor", "video_editor", "voice_generator"}]
+    cfg = SwarmConfig(
+        providers={
+            "recraft": ProviderConfig(api_key="x", models={"recraftv4_1": {}}),
+            "kling": ProviderConfig(api_key="x", models={"kling-v2.6-pro": {}}),
+            "zyphra": ProviderConfig(api_key="x", models={"zonos-v0.1-transformer": {}}),
+        }
+    )
+
+    assignments = assign_hybrid_provider_models(agents, cfg, include_sub_agents=False)
+    by_agent = {assignment.agent_name: assignment for assignment in assignments}
+
+    assert by_agent["photo_editor"].provider == "recraft"
+    assert by_agent["photo_editor"].model == "recraftv4_1"
+    assert by_agent["video_editor"].provider == "kling"
+    assert by_agent["video_editor"].model == "kling-v2.6-pro"
+    assert by_agent["voice_generator"].provider == "zyphra"
+    assert by_agent["voice_generator"].model == "zonos-v0.1-transformer"

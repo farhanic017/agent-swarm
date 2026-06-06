@@ -39,6 +39,10 @@ def test_requested_business_and_creative_agents_exist():
         "job_finder",
         "building_designer",
         "animator",
+        "hallucination_guard",
+        "n8n_workflow_creator",
+        "game_developer",
+        "social_media_manager",
         "app_tester",
         "app_builder",
         "backend_maker",
@@ -70,6 +74,10 @@ def test_requested_business_and_creative_agents_exist():
     assert "plan_job_finder_applier" in agents["job_finder"].tools
     assert "plan_building_design" in agents["building_designer"].tools
     assert "plan_animation" in agents["animator"].tools
+    assert "plan_hallucination_recovery" in agents["hallucination_guard"].tools
+    assert "plan_n8n_workflow" in agents["n8n_workflow_creator"].tools
+    assert "plan_game_developer" in agents["game_developer"].tools
+    assert "plan_social_media_manager" in agents["social_media_manager"].tools
     assert "plan_app_tester" in agents["app_tester"].tools
     assert "plan_app_builder" in agents["app_builder"].tools
     assert "plan_backend_maker" in agents["backend_maker"].tools
@@ -89,12 +97,20 @@ def test_agents_have_model_preferences_and_sub_agent_roles():
     assert agents["voice_generator"].model_preference == "text_to_speech"
     assert agents["building_designer"].model_preference == "vision"
     assert agents["animator"].model_preference == "video_generation"
+    assert agents["hallucination_guard"].model_preference == "reasoning"
+    assert agents["n8n_workflow_creator"].model_preference == "coding"
+    assert agents["game_developer"].model_preference == "coding"
+    assert agents["social_media_manager"].model_preference == "chat"
     assert agents["app_builder"].model_preference == "coding"
     assert agents["hermes"].model_preference == "reasoning"
     assert agents["auto_learner"].model_preference == "reasoning"
     assert agents["provider_health_monitor"].model_preference == "reasoning"
     assert agents["council_master"].model_preference == "reasoning"
     assert "testing" in agents["hermes"].sub_agent_roles
+    assert "checkpoint_manager" in agents["hallucination_guard"].sub_agent_roles
+    assert "webhook_listener" in agents["n8n_workflow_creator"].sub_agent_roles
+    assert "app_tester" in agents["game_developer"].sub_agent_roles
+    assert "marketing" in agents["social_media_manager"].sub_agent_roles
     assert "testing" in agents["coder"].sub_agent_roles
     assert "spawn_agent" in agents["coder"].tools
 

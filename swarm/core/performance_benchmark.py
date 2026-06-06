@@ -36,6 +36,12 @@ from swarm.core.sub_agent_planner import build_sub_agent_plan
 from swarm.core.switch_memory import SwitchMemory
 from swarm.core.token_budget import build_token_budget_plan
 from swarm.core.vision_bridge import plan_temporary_vision
+from swarm.core.workflow_plans import (
+    build_game_developer_plan,
+    build_hallucination_recovery_plan,
+    build_n8n_workflow_plan,
+    build_social_media_manager_plan,
+)
 from swarm.providers.base import Message
 from swarm.providers.factory import ProviderFactory
 
@@ -292,17 +298,40 @@ def run_feature_benchmark(config: SwarmConfig, output_dir: str | Path = "example
 
     record("replacement_model_memory", switch_memory_feature)
 
+    def long_session_automation_game_social_feature():
+        hallucination = build_hallucination_recovery_plan(
+            "multi-hour build with browser work, media generation, failing tests, and unclear old assumptions"
+        )
+        n8n = build_n8n_workflow_plan("route approved agent outputs into Slack, GitHub, and a social queue", "webhook")
+        game = build_game_developer_plan("build a small browser game with animated agents", "Phaser")
+        social = build_social_media_manager_plan("launch Agent Swarm with benchmark screenshots", "LinkedIn,X/Twitter,YouTube Shorts")
+        plan = run_ab_test("compare n8n automation plus game/social launch plan", agents[:8])
+        council_check = run_council_vote("validate hallucination guard, n8n, game, and social media features", agents)
+        return {
+            "hallucination_requires_evidence": hallucination["guardrails"]["require_evidence_for_claims"],
+            "n8n_dry_run": n8n["guardrails"]["dry_run_first"],
+            "game_has_tester": "app_tester" in game["sub_agents"],
+            "social_requires_approval": social["guardrails"]["approval_before_posting"],
+            "ab_candidates": len(plan.candidates),
+            "council_confidence": council_check.confidence,
+        }
+
+    record("long_session_n8n_game_social_parallel_work", long_session_automation_game_social_feature)
+
     def advanced_capabilities_feature():
         capabilities = list_advanced_capabilities()
         auto_learner = build_auto_learner_profile("aggressive tests, graph demos, README updates, low token cost")
         security_plan = plan_advanced_capability("scan agent outputs for hardcoded credentials", "secret_scanner")
+        hallucination_plan = plan_advanced_capability("fix hallucinations in a long coding session", "hallucination_recovery")
         categories = {item["category"] for item in capabilities}
         return {
             "capabilities": len(capabilities),
             "categories": sorted(categories),
             "has_auto_learner": any(item["key"] == "preference_memory" for item in capabilities),
+            "has_hallucination_recovery": any(item["key"] == "hallucination_recovery" for item in capabilities),
             "auto_learner_confidence": auto_learner["confidence"],
             "security_primary_agent": security_plan["primary_agent"],
+            "hallucination_primary_agent": hallucination_plan["primary_agent"],
         }
 
     record("advanced_capabilities_and_auto_learner", advanced_capabilities_feature)
@@ -549,6 +578,10 @@ def _score_feature_result(feature: str, value) -> int:
         return 100 if value.get("opinions", 0) >= 3 and value.get("confidence", 0) > 0 else 60
     if feature == "ab_testing_winner_and_alternative":
         return 100 if value.get("winner") and value.get("loser") and value.get("winner") != value.get("loser") else 60
+    if feature == "token_budget_guardrails":
+        return 100 if value.get("max_swarm_tokens", 0) <= value.get("single_agent_estimate", 0) * 3 and value.get("max_parallel_agents", 0) >= 1 else 50
+    if feature == "sub_agent_planning":
+        return 100 if value.get("planned_agents", 0) > 0 and value.get("parents", 0) >= 3 and value.get("sample") else 50
     if feature == "real_time_dashboard_export":
         return 100 if value.get("exists") and value.get("bytes", 0) > 10_000 else 60
     if feature == "voice_to_text_and_speech_support":
@@ -559,8 +592,21 @@ def _score_feature_result(feature: str, value) -> int:
         return 100 if value.get("graph_nodes", 0) >= 4 and value.get("vault_notes", 0) >= 3 and value.get("note_has_wikilink") else 50
     if feature == "hermes_self_evolution_skill_creation":
         return 100 if value.get("proposal_valid") and value.get("validation_ok") and value.get("saved") and value.get("listed", 0) >= 1 else 50
+    if feature == "replacement_model_memory":
+        return 100 if value.get("first_full") and value.get("second_remembered") else 50
+    if feature == "long_session_n8n_game_social_parallel_work":
+        return 100 if all(
+            (
+                value.get("hallucination_requires_evidence"),
+                value.get("n8n_dry_run"),
+                value.get("game_has_tester"),
+                value.get("social_requires_approval"),
+                value.get("ab_candidates", 0) >= 2,
+                value.get("council_confidence", 0) >= 60,
+            )
+        ) else 50
     if feature == "advanced_capabilities_and_auto_learner":
-        return 100 if value.get("capabilities", 0) >= 55 and value.get("has_auto_learner") and value.get("security_primary_agent") == "secret_scanner" else 50
+        return 100 if value.get("capabilities", 0) >= 59 and value.get("has_auto_learner") and value.get("has_hallucination_recovery") and value.get("security_primary_agent") == "secret_scanner" and value.get("hallucination_primary_agent") == "hallucination_guard" else 50
     if feature == "temporary_vision_bridge_routes":
         delegate_ok = (
             (value.get("configured_vision_model") and value.get("delegate_route") == "delegate_to_temporary_vision_model")
@@ -568,6 +614,9 @@ def _score_feature_result(feature: str, value) -> int:
         )
         fallback_ok = value.get("plan_mode_questions", 0) >= 7 and value.get("build_mode_route_without_vision") == "continue_without_annoying_user"
         return 100 if delegate_ok and fallback_ok and value.get("handoff_policy") else 50
+    if feature == "master_integration_review":
+        checks = value.get("checks", {})
+        return 100 if value.get("status") == "pass" and checks and all(checks.values()) else 50
     return 90 if value else 50
 
 

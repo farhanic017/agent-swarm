@@ -71,6 +71,16 @@ class OpenAICompatibleProvider(LLMProvider):
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
+    def _default_video_path(self) -> str:
+        if self.provider_name == "kling":
+            return "/videos/text2video" if self.endpoint.endswith("/v1") else "/v1/videos/text2video"
+        return "/videos/generations"
+
+    def _default_speech_path(self) -> str:
+        if self.provider_name == "zyphra":
+            return "/audio/text-to-speech"
+        return "/audio/speech"
+
     async def generate_image(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
         model = request.model or "image-generation"
         path = request.extra.get("path") or "/images/generations"
@@ -86,7 +96,7 @@ class OpenAICompatibleProvider(LLMProvider):
 
     async def generate_video(self, request: MediaGenerationRequest) -> MediaGenerationResponse:
         model = request.model or "video-generation"
-        path = request.extra.get("path") or "/videos/generations"
+        path = request.extra.get("path") or self._default_video_path()
         body = media_body(request, model, kind="video")
         body.pop("path", None)
         response = await self._client.post(
@@ -111,7 +121,7 @@ class OpenAICompatibleProvider(LLMProvider):
 
     async def synthesize_speech(self, request: AudioSpeechRequest) -> AudioResponse:
         model = request.model or "tts-1"
-        path = request.extra.get("path") or "/audio/speech"
+        path = request.extra.get("path") or self._default_speech_path()
         response = await self._client.post(
             f"{self.endpoint}{path}",
             headers=self._headers(),
