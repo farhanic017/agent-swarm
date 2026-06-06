@@ -19,7 +19,8 @@ from swarm.core.graphify import build_graphify_payload, build_graphify_project_m
 from swarm.core.mcp_marketplace import list_mcp_marketplace, plan_mcp_connectors
 from swarm.core.obsidian import build_obsidian_note, plan_obsidian_vault
 from swarm.core.preflight_review import review_agent_output, format_github_review_comments
-from swarm.core.media_apps import list_media_apps, build_mockup_video_plan, build_voice_workflow_plan
+from swarm.core.design_policy import classify_3d_design_request
+from swarm.core.media_apps import list_media_apps, build_mockup_video_plan, build_voice_workflow_plan, build_3d_modeling_plan
 from swarm.core.skill_runtime import plan_required_skills
 from swarm.core.environment_support import discover_environment_support
 
@@ -403,6 +404,29 @@ class ToolRegistry:
                     "prompt": {"type": "string"},
                     "app": {"type": "string"},
                 },
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
+            name="plan_3d_design_model",
+            description="Plan a 3D model from a user-owned design, sketch, building, product, CAD note, or original character reference. Allows faithful user-owned designs and only redirects exact third-party clones to original variants.",
+            func=lambda prompt, app="Blender": json.dumps(build_3d_modeling_plan(prompt, app), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string"},
+                    "app": {"type": "string"},
+                },
+                "required": ["prompt"],
+            },
+        ))
+        self.register(Tool(
+            name="classify_3d_design_request",
+            description="Classify whether a 3D design request is a user-owned design that can be built directly or an exact third-party clone that should become an original variant.",
+            func=lambda prompt: json.dumps(classify_3d_design_request(prompt), indent=2),
+            parameters={
+                "type": "object",
+                "properties": {"prompt": {"type": "string"}},
                 "required": ["prompt"],
             },
         ))

@@ -2,7 +2,8 @@ from pathlib import Path
 
 from swarm.core import environment_support
 from swarm.core.environment_support import discover_environment_support
-from swarm.core.media_apps import build_mockup_video_plan, build_voice_workflow_plan, list_media_apps
+from swarm.core.design_policy import classify_3d_design_request
+from swarm.core.media_apps import build_3d_modeling_plan, build_mockup_video_plan, build_voice_workflow_plan, list_media_apps
 from swarm.core.skill_runtime import create_temporary_skill_session, plan_required_skills
 from swarm.tools.registry import ToolRegistry
 
@@ -89,3 +90,25 @@ def test_default_tool_registry_exposes_new_support_tools():
     assert "plan_docs_integration" in tools
     assert "list_mcp_marketplace" in tools
     assert "plan_mcp_connectors" in tools
+    assert "plan_3d_design_model" in tools
+    assert "classify_3d_design_request" in tools
+
+
+def test_user_owned_designs_are_allowed_for_direct_3d_modeling():
+    building = classify_3d_design_request("I designed a building; make my building sketch into a 3D Blender model")
+    original_character = classify_3d_design_request("convert my original design creature into a detailed 3D model")
+    plan = build_3d_modeling_plan("turn my floor plan and blueprint into a realistic 3D building", "Blender")
+
+    assert building["decision"] == "allow_direct_3d_build"
+    assert building["user_owned_design_allowed"] is True
+    assert original_character["decision"] == "allow_direct_3d_build"
+    assert plan["policy"]["user_owned_design_allowed"] is True
+    assert plan["quality_bar"]["user_owned_designs"] == "match the user's design as closely as possible"
+
+
+def test_exact_third_party_clone_redirects_to_original_variant():
+    result = classify_3d_design_request("make an exact same to same Mewtwo clone")
+
+    assert result["decision"] == "transform_to_original_variant"
+    assert result["third_party_exact_clone"] is True
+    assert "original variant" in result["guidance"]

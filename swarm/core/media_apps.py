@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from swarm.core.design_policy import build_3d_design_workflow
+
 
 @dataclass(frozen=True)
 class MediaAppAdapter:
@@ -85,6 +87,20 @@ def build_mockup_video_plan(prompt: str, app: str = "auto") -> dict:
             "final_render_requires_user_approval": True,
         },
     }
+
+
+def build_3d_modeling_plan(prompt: str, app: str = "Blender") -> dict:
+    selected = next((item for item in MEDIA_APP_ADAPTERS if item.name.lower() == app.lower()), None)
+    if selected is None:
+        selected = next(item for item in MEDIA_APP_ADAPTERS if item.name == "Blender")
+    workflow = build_3d_design_workflow(prompt, selected.name)
+    workflow["selected_app"] = selected.to_dict()
+    workflow["performance_guardrails"] = {
+        "start_with_lightweight_blockout": True,
+        "preview_render_before_high_detail": True,
+        "export_after_visual_qa": True,
+    }
+    return workflow
 
 
 def build_voice_workflow_plan(prompt: str, mode: str = "speech_to_text", provider: str = "auto") -> dict:

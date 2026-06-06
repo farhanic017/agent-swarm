@@ -36,6 +36,11 @@ COMMON_COLLAB_TOOLS = (
     "spawn_agent",
 )
 
+DESIGN_3D_TOOLS = (
+    "plan_3d_design_model",
+    "classify_3d_design_request",
+)
+
 CODE_TOOLS = (
     "read_file",
     "write_file",
@@ -150,9 +155,9 @@ AGENT_SPECS: tuple[AgentSpec, ...] = (
     AgentSpec("localization", "Localization Agent", "design", "business", "Adapts product language, formatting, and culture-specific UX.", ("translation QA", "locale formats", "cultural fit"), COMMON_COLLAB_TOOLS, 0.25, "chat"),
     AgentSpec("product_manager", "Product Management Agent", "act", "business", "Turns goals into roadmap, requirements, and acceptance criteria.", ("prioritization", "requirements", "tradeoff calls"), COMMON_COLLAB_TOOLS, 0.25, "reasoning"),
     AgentSpec("sales", "Sales Agent", "act", "business", "Evaluates buyer fit, objections, and revenue paths.", ("ICP fit", "objection handling", "pipeline impact"), RESEARCH_TOOLS + COMMON_COLLAB_TOOLS, 0.35, "chat"),
-    AgentSpec("design", "Design Agent", "design", "creative", "Creates product design direction, flows, layout, and interaction patterns.", ("UI flows", "visual systems", "interaction design"), COMMON_COLLAB_TOOLS, 0.35, "chat"),
-    AgentSpec("photo_editor", "Image Generation & Edit Agent", "see", "creative", "Plans, generates, and critiques image assets, crops, retouching, masking, restoration, and asset polish.", ("image generation", "image critique", "retouch plans", "masking guidance", "asset QA"), COMMON_COLLAB_TOOLS, 0.3, "image_generation"),
-    AgentSpec("video_editor", "Video Generation & Edit Agent", "see", "creative", "Plans, generates, and critiques video clips, cuts, pacing, captions, transitions, color, thumbnails, and video polish.", ("video generation", "story pacing", "caption review", "timeline QA", "motion notes"), COMMON_COLLAB_TOOLS, 0.3, "video_generation"),
+    AgentSpec("design", "Design Agent", "design", "creative", "Creates product design direction, flows, layout, interaction patterns, and faithful 3D plans for user-owned designs.", ("UI flows", "visual systems", "interaction design", "user-owned 3D design modeling"), DESIGN_3D_TOOLS + COMMON_COLLAB_TOOLS, 0.35, "chat"),
+    AgentSpec("photo_editor", "Image Generation & Edit Agent", "see", "creative", "Plans, generates, and critiques image assets, crops, retouching, masking, restoration, and asset polish.", ("image generation", "image critique", "retouch plans", "masking guidance", "asset QA"), DESIGN_3D_TOOLS + COMMON_COLLAB_TOOLS, 0.3, "image_generation"),
+    AgentSpec("video_editor", "Video Generation & Edit Agent", "see", "creative", "Plans, generates, and critiques video clips, cuts, pacing, captions, transitions, color, thumbnails, and video polish.", ("video generation", "story pacing", "caption review", "timeline QA", "motion notes"), DESIGN_3D_TOOLS + COMMON_COLLAB_TOOLS, 0.3, "video_generation"),
     AgentSpec("voice_transcriber", "Voice-to-Text Agent", "see", "creative", "Plans and runs speech-to-text transcription, diarization handoff, subtitle drafts, and transcript cleanup.", ("speech to text", "audio transcription", "subtitle draft", "speaker note cleanup"), COMMON_COLLAB_TOOLS, 0.2, "speech_to_text"),
     AgentSpec("voice_generator", "Voice Generation Agent", "design", "creative", "Plans and runs text-to-speech voiceovers, narration drafts, voice style prompts, and audio export QA.", ("text to speech", "voiceover generation", "narration", "audio export QA"), COMMON_COLLAB_TOOLS, 0.25, "text_to_speech"),
     AgentSpec("figma_controller", "Figma Control Agent", "design", "creative", "Coordinates Figma-oriented layout, component, and handoff changes.", ("component control", "design QA", "handoff specs", "browser prototype checks"), BROWSER_TOOLS + COMMON_COLLAB_TOOLS, 0.25, "vision"),

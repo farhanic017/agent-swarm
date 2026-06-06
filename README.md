@@ -4,7 +4,7 @@
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
 ![version: v5](https://img.shields.io/badge/version-v5-2563eb)
-![tests: 286 passed](https://img.shields.io/badge/tests-286%20passed-16a34a)
+![tests: 288 passed](https://img.shields.io/badge/tests-288%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -122,6 +122,7 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 - **Docs integration planning** selects framework/API docs such as Next.js, React, Tailwind, Supabase, Stripe, Figma, Vercel, Cloudflare, Three.js, ElevenLabs, and Manus before version-sensitive code is generated.
 - **Built-in Graphify support** creates project knowledge maps, agent/artifact graphs, Graphify-compatible JSON payloads, and guarded graph exports for visual architecture review.
 - **Built-in Obsidian support** plans markdown vaults, backlinks, graph-view clusters, and Obsidian-compatible notes so agents can turn project context, decisions, tests, and security findings into a navigable knowledge base.
+- **User-owned design to 3D support** allows direct, faithful 3D modeling from a user's own sketches, buildings, floor plans, product concepts, logos, original characters, CAD notes, and reference photos. The swarm should match user-owned designs closely and only redirect exact third-party character/brand clones into original variants.
 - **Text, voice, image, video, and prompt agents** are first-class roles. The swarm includes text editing, prompt generation, speech-to-text, text-to-speech, image generation/editing, video generation/editing, Figma/design control, and browser prototype checks.
 - **Image and video generation model support** routes configured `image_generation` and `video_generation` models through provider adapters. OpenAI, Azure OpenAI/Foundry-style endpoints, and OpenAI-compatible media gateways can expose `images/generations` and configurable video generation routes.
 - **Voice-to-text and text-to-speech support** routes configured `speech_to_text` and `text_to_speech` models through OpenAI-compatible audio routes or native ElevenLabs endpoints. Voice agents can create transcript/subtitle workflows and narration/voiceover workflows without forcing audio work onto chat agents.
@@ -424,9 +425,10 @@ agent-swarm/
 ### v5 (Current) - Graphify, Obsidian & Scoped File Security
 - Added built-in Graphify project maps, agent/artifact graph payloads, and guarded Graphify JSON export tooling.
 - Added built-in Obsidian vault planning, markdown note generation, backlinks, tags, and graph-view clusters for project knowledge bases.
+- Added permissive user-owned design-to-3D planning for buildings, products, floor plans, original characters, CAD notes, sketches, and reference photos.
 - Replaced raw file read/write/list tools with scoped file-access enforcement through `AGENT_SWARM_ALLOWED_ROOTS` or the current project root.
 - Blocked sensitive credential paths including `.env`, private keys, `.git`, `.ssh`, cloud credential folders, and certificate/key files from agent file tools.
-- Added Graphify, Obsidian, and secure file-access coverage to the internal feature benchmark and expanded regression coverage to 286 passing tests.
+- Added Graphify, Obsidian, user-owned 3D design policy, and secure file-access coverage with expanded regression coverage to 288 passing tests.
 
 ### v4 - Compact Context, MCP Marketplace, Docs & Security Expansion
 - Added explicit XSS validation for raw HTML rendering and script injection patterns.
