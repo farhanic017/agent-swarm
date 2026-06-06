@@ -151,7 +151,7 @@ def draw_chips(draw: ImageDraw.ImageDraw, frame: int):
     for idx, feature in enumerate(FEATURES + FEATURES[:8]):
         w = 18 + draw.textbbox((0, 0), feature, font=F_TINY)[2]
         color = [GREEN, BLUE, AMBER, PINK, PURPLE][idx % 5]
-        if -w < x < WIDTH:
+        if 34 <= x and x + w <= WIDTH - 34:
             draw_round(draw, (x, y, x + w, y + 28), 14, (18, 27, 45), color)
             draw_text(draw, (x + 9, y + 6), feature, fill=TEXT, fnt=F_TINY)
         x += w + 10
@@ -222,13 +222,14 @@ def scene_council(draw, local: int):
 def scene_agents(draw, local: int):
     draw_text(draw, (58, 110), "Specialists and sub-agents work in parallel", fnt=F_H1)
     for idx, (name, pillar, color) in enumerate(AGENTS):
-        row = idx % 8
-        col = idx // 8
-        x = 56 + col * 405
-        y = 160 + row * 47
-        draw_round(draw, (x, y, x + 360, y + 31), 8, PANEL, color if (local // 8 + idx) % 3 == 0 else (45, 55, 75))
-        draw_text(draw, (x + 14, y + 6), name, fnt=F_TINY)
-        draw_text(draw, (x + 286, y + 6), pillar, fill=color, fnt=F_TINY)
+        row = idx % 6
+        col = idx // 6
+        x = 56 + col * 300
+        y = 166 + row * 54
+        active = (local // 8 + idx) % 3 == 0
+        draw_round(draw, (x, y, x + 270, y + 35), 8, PANEL, color if active else (45, 55, 75))
+        draw_text(draw, (x + 14, y + 8), name, fnt=F_TINY)
+        draw_text(draw, (x + 220, y + 8), pillar, fill=color, fnt=F_TINY)
     draw_text(draw, (413, 565), "spawn_agent lets any specialist delegate focused work", fill=MUTED, fnt=F_BODY)
 
 
@@ -434,7 +435,7 @@ def scene_hermes(draw, local: int):
 def scene_finish(draw, local: int):
     draw_text(draw, (96, 128), "Aggressive verification", fnt=F_TITLE)
     cards = [
-        ("pytest", "318 passed", GREEN),
+        ("pytest", "319 passed", GREEN),
         ("warnings", "clean", GREEN),
         ("all CLIs", "shown", BLUE),
         ("feature benchmark", "16/16 passed", PURPLE),

@@ -160,6 +160,8 @@ PUBLIC_BENCHMARK_POINTS = [
     },
 ]
 
+REQUIRED_CHART_MODELS = {"Agent Swarm", "Kimi K2.6"}
+
 COMPLEX_WORK_PROMPT = (
     "Complex benchmark work: design a secure multi-agent job finder and applier that scrapes listings, "
     "uses temporary vision for screenshots, routes coding/security/browser agents to the best providers, "
@@ -1308,6 +1310,50 @@ def short_model_label(name: str) -> str:
     return "".join(part[:1].upper() for part in re.findall(r"[A-Za-z0-9]+", name))[:5] or "M"
 
 
+def order_metric_points(points: list[dict], metric: str, higher_better: bool, limit: int = 15) -> list[dict]:
+    sortable = []
+    for point in points:
+        value = point.get(metric)
+        sort_value = value if isinstance(value, (int, float)) else (-1 if higher_better else 999999)
+        sortable.append((sort_value, point))
+    sortable.sort(key=lambda item: item[0], reverse=higher_better)
+    ranked = [point for _, point in sortable]
+
+    selected_names: set[str] = set()
+    for point in ranked:
+        selected_names.add(point["name"])
+        if len(selected_names) >= limit:
+            break
+
+    for required in REQUIRED_CHART_MODELS:
+        if any(point["name"] == required for point in points):
+            selected_names.add(required)
+
+    selected = [point for point in ranked if point["name"] in selected_names]
+    if len(selected) <= limit:
+        return selected
+
+    protected = {point["name"] for point in selected if point["name"] in REQUIRED_CHART_MODELS}
+    trimmed: list[dict] = []
+    for point in selected:
+        if len(trimmed) < limit or point["name"] in protected:
+            trimmed.append(point)
+        if len(trimmed) > limit:
+            for index in range(len(trimmed) - 1, -1, -1):
+                if trimmed[index]["name"] not in protected:
+                    trimmed.pop(index)
+                    break
+    return trimmed[:limit]
+
+
+def compact_bar_label(point: dict) -> str:
+    if point.get("name") == "Agent Swarm":
+        return "AS"
+    short = str(point.get("short") or "")
+    aliases = {"LLAMA": "LMA", "SWARM": "AS"}
+    return aliases.get(short, short[:4])
+
+
 def draw_metric_card(
     image: Image.Image,
     draw: ImageDraw.ImageDraw,
@@ -1338,13 +1384,7 @@ def draw_metric_card(
         for x in range(chart_left, chart_right, 8):
             draw.point((x, y), fill=(203, 213, 225))
 
-    sortable = []
-    for point in points:
-        value = point.get(metric)
-        sort_value = value if isinstance(value, (int, float)) else (-1 if higher_better else 999999)
-        sortable.append((sort_value, point))
-    sortable.sort(key=lambda item: item[0], reverse=higher_better)
-    ordered = [point for _, point in sortable[:12]]
+    ordered = order_metric_points(points, metric, higher_better)
 
     count = max(1, len(ordered))
     step = (chart_right - chart_left) / count
@@ -1361,12 +1401,16 @@ def draw_metric_card(
             label = format_metric_value(value, metric)
             label_fill = (255, 255, 255) if bar_height > 34 else (17, 24, 39)
             label_y = y + 8 if bar_height > 34 else y - 20
-            draw.text((x + 4, label_y), label, fill=label_fill, font=chart_font(12, True))
+            label_width = draw.textlength(label, font=chart_font(12, True))
+            draw.text((x + (bar_width - label_width) / 2, label_y), label, fill=label_fill, font=chart_font(12, True))
         else:
             draw.rounded_rectangle((x, chart_bottom - 4, x + bar_width, chart_bottom), radius=3, fill=(148, 163, 184))
             draw.text((x - 2, chart_bottom - 28), "0", fill=(100, 116, 139), font=chart_font(12, True))
-        draw.text((x - 2, chart_bottom + 9), point["short"], fill=(17, 24, 39), font=chart_font(11, True))
-        draw_rotated_text(image, (x - 24, chart_bottom + 31), point["name"], chart_font(11), (17, 24, 39))
+        short_label = compact_bar_label(point)
+        short_font = chart_font(9, True)
+        short_width = draw.textlength(short_label, font=short_font)
+        draw.text((x + (bar_width - short_width) / 2, chart_bottom + 9), short_label, fill=(17, 24, 39), font=short_font)
+        draw_vertical_text(image, x + bar_width // 2, chart_bottom + 31, point["name"], chart_font(10), (17, 24, 39))
 
 
 def format_metric_value(value: float, metric: str) -> str:
@@ -1375,12 +1419,12 @@ def format_metric_value(value: float, metric: str) -> str:
     return str(int(round(value)))
 
 
-def draw_rotated_text(image: Image.Image, xy: tuple[int, int], text: str, font, fill: tuple[int, int, int]) -> None:
-    label = Image.new("RGBA", (150, 26), (255, 255, 255, 0))
+def draw_vertical_text(image: Image.Image, x_center: int, y: int, text: str, font, fill: tuple[int, int, int]) -> None:
+    label = Image.new("RGBA", (210, 20), (255, 255, 255, 0))
     label_draw = ImageDraw.Draw(label)
-    label_draw.text((0, 0), text[:26], fill=fill + (255,), font=font)
-    rotated = label.rotate(62, expand=True, resample=Image.Resampling.BICUBIC)
-    image.paste(rotated, xy, rotated)
+    label_draw.text((0, 0), text[:32], fill=fill + (255,), font=font)
+    rotated = label.rotate(90, expand=True, resample=Image.Resampling.BICUBIC)
+    image.paste(rotated, (int(x_center - rotated.width / 2), y), rotated)
 
 
 def render_coding_models_chart(report: dict, path: Path) -> None:

@@ -9,6 +9,7 @@ from scripts.run_aggressive_cli_benchmark import (
     compare_single_vs_swarm,
     default_opencode_targets,
     normalize_cli_version_result,
+    order_metric_points,
     render_benchmark_charts,
     run_requested_model_benchmarks,
     run_swarm_complex_work,
@@ -180,3 +181,25 @@ def test_public_benchmark_points_cover_popular_models_without_missing_metrics():
     for point in points:
         for metric in ("intelligence", "speed", "price", "swe_bench_pro", "terminal_bench", "coding"):
             assert isinstance(point.get(metric), (int, float)), (point["name"], metric)
+
+
+def test_metric_cards_keep_kimi_visible_when_requested_models_are_added():
+    points = build_comparison_card_points(
+        {
+            "comparison": {},
+            "swarm_complex_work": {"agent_count": 12, "sub_agent_count": 20},
+            "requested_model_benchmarks": [
+                {
+                    "display_name": f"Requested Model {index}",
+                    "single_model": {"ok": True, "execution_coverage_score": 90 - index, "elapsed_seconds": 1, "details": "output_chars=1000"},
+                }
+                for index in range(8)
+            ],
+        }
+    )
+
+    for metric, higher_better in (("intelligence", True), ("speed", True), ("price", False), ("coding", True)):
+        ordered = order_metric_points(points, metric, higher_better, limit=12)
+        names = {point["name"] for point in ordered}
+        assert "Agent Swarm" in names
+        assert "Kimi K2.6" in names

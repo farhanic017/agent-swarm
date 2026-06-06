@@ -4,7 +4,7 @@
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
 ![version: v7](https://img.shields.io/badge/version-v7-2563eb)
-![tests: 318 passed](https://img.shields.io/badge/tests-318%20passed-16a34a)
+![tests: 319 passed](https://img.shields.io/badge/tests-319%20passed-16a34a)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
