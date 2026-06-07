@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-swarm-framework"
+version = "8.0.0"
+description = "Open-source Python framework for multi-agent AI orchestration, coding-agent swarms, council voting, provider routing, browser tools, and workflow automation."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+  { name = "Farhan Dhrubo" }
+]
+keywords = [
+  "ai-agents",
+  "agent-swarm",
+  "multi-agent-system",
+  "llm-orchestration",
+  "autonomous-agents",
+  "coding-agents",
+  "agent-framework",
+  "workflow-automation",
+  "openai",
+  "anthropic",
+  "openrouter",
+  "mcp"
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = [
+  "httpx>=0.27.0",
+  "pydantic>=2.5.0",
+  "python-dotenv>=1.0.0",
+  "rich>=13.7.0",
+  "pyyaml>=6.0",
+  "aiofiles>=23.2.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/farhanic017/agent-swarm"
+Repository = "https://github.com/farhanic017/agent-swarm"
+Issues = "https://github.com/farhanic017/agent-swarm/issues"
+Funding = "https://www.patreon.com/farhanic017"
+
+[project.scripts]
+agent-swarm = "main:main"
+
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+include = ["swarm*"]
