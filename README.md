@@ -501,16 +501,19 @@ agent-swarm/
 
 ## Version History
 
-### v9.5 (Current) - Parallel Providers, Shared Memory & Full Swarm Intelligence
+### v9.5 (Current) - Parallel Providers & Provider Health Monitoring
+- **Parallel Multi-Provider Execution** — New parallel execution system: `parallel_chat` (automatic failover across providers), `parallel_chat_race` (sends to multiple providers simultaneously, returns fastest response), `get_provider_health` (success rates, latency, availability), `list_available_providers` (all healthy providers with status).
+- **Provider Health Monitoring** — Tracks success/failure counts, detects rate limiting (429 errors), automatic status (healthy/degraded/down/rate_limited), latency tracking with exponential moving average.
+- **Xiaomi MiMo Support** — Added Xiaomi MiMo provider with mimo-v2.5, mimo-v2.5-pro, and mimo-v2.5-flash models. Detect `XIAOMI_API_KEY` or `MIMO_API_KEY` environment variables.
+- **360 passing tests** — Full regression suite green.
+
+### v9 - Shared Memory, Domain Councils & Financial Tools
 - **Shared Memory System** — All agents now have persistent awareness of what other agents are doing, what happened, and what will happen. 12 new tools: `memory_store_event`, `memory_store_task`, `memory_store_prediction`, `memory_store_knowledge`, `memory_store_lesson`, `memory_query`, `memory_get_agent_state`, `memory_get_all_states`, `memory_get_summary`, `memory_get_recent`, `memory_get_predictions`, `memory_clear`.
 - **System Awareness** — The swarm knows its own hardware: RAM detection, GPU/VRAM detection (NVIDIA/AMD), disk storage status, and auto-detection of 12 API providers from environment variables.
 - **Prediction Agent** — New specialist that analyzes patterns from shared memory, historical data, and current state to predict outcomes with confidence scores.
 - **Financial Researcher Agent** — 10 equity/market tools ported from OpenAlice: company profiles, financial statements, ratios, earnings calendars, insider trading, short interest, analyst estimates, market discovery, technical indicators (SMA/RSI/MACD/Bollinger), and stock search.
 - **8 Domain-Specific Councils** — Separate review councils for each discipline: `design_council`, `art_council`, `website_council`, `animation_council`, `color_council`, `sound_council`, `finance_council`, `marketing_council`.
-- **Xiaomi MiMo Support** — Added Xiaomi MiMo provider with mimo-v2.5, mimo-v2.5-pro, and mimo-v2.5-flash models. Detect `XIAOMI_API_KEY` or `MIMO_API_KEY` environment variables.
-- **Parallel Multi-Provider Execution** — New parallel execution system: `parallel_chat` (failover), `parallel_chat_race` (fastest wins), `get_provider_health`, `list_available_providers`. Providers work simultaneously, not just one at a time. Load balancing, health monitoring, and automatic failover.
 - **Financial Code Removed from OpenAlice** — All financial tool files, equity clients, and model definitions removed from OpenAlice repo since capabilities are now native to Agent Swarm.
-- **360 passing tests** — Full regression suite green across all new and existing features.
 
 ### v8 - Live Demo, Benchmarks & Version Polish
 - Updated the README and live demo branding to v8.
