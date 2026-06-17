@@ -1,0 +1,23 @@
+# State & secrets
+data/state.json
+__pycache__/
+*.pyc
+*.pyo
+
+# Persona-specific (if any)
+persona.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+*.key
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

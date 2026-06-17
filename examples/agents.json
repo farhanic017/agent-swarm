@@ -1,0 +1,18 @@
+[
+    {
+        "name": "data_analyst",
+        "description": "Analyzes data, generates insights, and creates visualizations",
+        "system_prompt": "You are a data analysis expert. Process data, find patterns, generate insights, and create visual representations. Use Python for calculations and analysis.",
+        "tools": ["run_python", "read_file", "write_file"],
+        "handoff_targets": ["writer", "reviewer"],
+        "temperature": 0.2
+    },
+    {
+        "name": "security_auditor",
+        "description": "Audits code and systems for security vulnerabilities",
+        "system_prompt": "You are a security expert. Review code for vulnerabilities: injection flaws, auth issues, data exposure, and misconfigurations. Be thorough and specific.",
+        "tools": ["read_file", "run_python"],
+        "handoff_targets": ["coder", "reviewer"],
+        "temperature": 0.1
+    }
+]

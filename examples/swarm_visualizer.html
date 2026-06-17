@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Swarm — Live Visualization</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: #2a2a3e;
+  --text: #e0e0f0;
+  --text2: #8888aa;
+  --accent: #6c5ce7;
+  --accent2: #00cec9;
+  --green: #00b894;
+  --yellow: #fdcb6e;
+  --red: #e17055;
+  --pink: #fd79a8;
+  --blue: #74b9ff;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ── Canvas Background ── */
+#particleCanvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Main Layout ── */
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr 300px;
+  grid-template-rows: 56px 1fr 40px;
+  height: 100vh;
+  gap: 1px;
+  background: var(--border);
+}
+
+/* ── Header ── */
+.header {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+.header .stats {
+  display: flex;
+  gap: 24px;
+  font-size: 12px;
+}
+.header .stats span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.header .stats .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot.green { background: var(--green); }
+.dot.yellow { background: var(--yellow); }
+.dot.pink { background: var(--pink); }
+.header .status {
+  font-size: 12px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rec-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  color: #fff;
+  transition: all .3s;
+}
+.rec-badge.idle { background: #333; color: var(--text2); }
+.rec-badge.recording { background: var(--red); animation: pulse 1.5s infinite; }
+.rec-badge.saving { background: var(--yellow); color: #000; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Left Sidebar ── */
+.sidebar {
+  background: var(--surface);
+  overflow-y: auto;
+  padding: 12px;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.provider-card {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  transition: all .3s;
+}
+.provider-card.active { border-color: var(--accent2); box-shadow: 0 0 20px rgba(0,206,201,.1); }
+.provider-card .name {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.provider-card .name .count {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text2);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.provider-card .models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.model-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text2);
+  border: 1px solid var(--border);
+  transition: all .3s;
+  cursor: default;
+}
+.model-chip.used {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(108,92,231,.1);
+}
+.model-chip.active {
+  border-color: var(--accent2);
+  color: var(--accent2);
+  background: rgba(0,206,201,.15);
+  animation: glow 1s ease-in-out infinite alternate;
+}
+@keyframes glow {
+  from { box-shadow: 0 0 5px rgba(0,206,201,.2); }
+  to { box-shadow: 0 0 15px rgba(0,206,201,.4); }
+}
+
+/* ── Main Area ── */
+.main {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.graph-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+#agentCanvas {
+  width: 100%;
+  height: 100%;
+}
+.agent-panel {
+  height: 200px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.agent-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 12px 0;
+  background: var(--surface2);
+}
+.agent-tab {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  transition: all .2s;
+}
+.agent-tab:hover { color: var(--text); background: rgba(255,255,255,.03); }
+.agent-tab.active {
+  color: var(--text);
+  background: var(--surface);
+}
+.agent-tab .badge {
+  margin-left: 6px;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--border);
+}
+.agent-output {
+  flex: 1;
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+.agent-output::-webkit-scrollbar { width: 4px; }
+.agent-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.agent-output .line { opacity: 0; animation: fadeIn .3s forwards; }
+.agent-output .line.system { color: var(--text2); }
+.agent-output .line.agent { color: var(--accent); }
+.agent-output .line.progress { color: var(--blue); }
+.agent-output .line.complete { color: var(--green); }
+.agent-output .line.error { color: var(--red); }
+.agent-output .line.switch { color: var(--yellow); }
+@keyframes fadeIn { to { opacity: 1; } }
+
+/* ── Right Panel ── */
+.right-panel {
+  background: var(--surface);
+  overflow-y: auto;
+  padding: 12px;
+}
+.right-panel::-webkit-scrollbar { width: 4px; }
+.right-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+.event-entry {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--surface2);
+  border-radius: 8px;
+  border-left: 3px solid var(--border);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.event-entry .time {
+  font-size: 9px;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+}
+.event-entry .label {
+  font-weight: 600;
+  margin: 2px 0;
+}
+.event-entry.state_change { border-left-color: var(--accent); }
+.event-entry.progress { border-left-color: var(--blue); }
+.event-entry.completion { border-left-color: var(--green); }
+.event-entry.error { border-left-color: var(--red); }
+.event-entry.switch { border-left-color: var(--yellow); }
+.event-entry.diagnostic { border-left-color: var(--pink); }
+
+/* ── Footer ── */
+.footer {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  font-size: 11px;
+  color: var(--text2);
+}
+.footer .progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 16px;
+  overflow: hidden;
+}
+.footer .progress-bar .fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+  transition: width .5s ease;
+}
+
+/* ── Recording overlay ── */
+#recordingOverlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 9999;
+  pointer-events: none;
+}
+#recordingOverlay .corner {
+  position: absolute;
+  width: 40px; height: 40px;
+  border-color: var(--red);
+  border-style: solid;
+  border-width: 0;
+}
+#recordingOverlay .corner.tl { top: 10px; left: 10px; border-top-width: 3px; border-left-width: 3px; }
+#recordingOverlay .corner.tr { top: 10px; right: 10px; border-top-width: 3px; border-right-width: 3px; }
+#recordingOverlay .corner.bl { bottom: 10px; left: 10px; border-bottom-width: 3px; border-left-width: 3px; }
+#recordingOverlay .corner.br { bottom: 10px; right: 10px; border-bottom-width: 3px; border-right-width: 3px; }
+</style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+
+<!-- Recording indicator overlay -->
+<div id="recordingOverlay" style="display:none">
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+</div>
+
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>✦ Agent Swarm</h1>
+    <div class="stats">
+      <span><span class="dot green"></span><span id="agentsActive">0</span> agents</span>
+      <span><span class="dot yellow"></span><span id="modelsUsed">0</span> models</span>
+      <span><span class="dot pink"></span><span id="eventsCount">0</span> events</span>
+    </div>
+    <div class="status">
+      <span id="statusText">initializing...</span>
+      <button class="rec-badge idle" id="recBtn">⏺ Record</button>
+    </div>
+  </div>
+
+  <!-- Sidebar: Providers & Models -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Main: Graph + Agent Output -->
+  <div class="main">
+    <div class="graph-area">
+      <canvas id="agentCanvas"></canvas>
+    </div>
+    <div class="agent-panel">
+      <div class="agent-tabs" id="agentTabs"></div>
+      <div class="agent-output" id="agentOutput"></div>
+    </div>
+  </div>
+
+  <!-- Right Panel: Event Log -->
+  <div class="right-panel">
+    <div class="panel-title">Live Events</div>
+    <div id="eventLog"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span id="footerLeft">⚡ swarm consciousness active</span>
+    <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+    <span id="footerRight">model: —</span>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// DATA: 3 providers, 49 models
+// ═══════════════════════════════════════
+
+const PROVIDERS = [
+  {
+    name: 'azure-openai',
+    color: '#0078d4',
+    models: [
+      'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano',
+      'gpt-5.1', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano',
+      'gpt-4o', 'gpt-4o-mini', 'o4-mini',
+      'grok-4.3', 'grok-4-1-fast-reasoning',
+      'DeepSeek-V4-Pro', 'Kimi-K2.6', 'Phi-4-multimodal-instruct'
+    ]
+  },
+  {
+    name: 'google-ai',
+    color: '#4285f4',
+    models: [
+      'gemini-2.0-flash-001', 'gemini-2.0-flash-lite-001',
+      'gemini-2.5-flash-001', 'gemini-2.0-pro-001'
+    ]
+  },
+  {
+    name: 'openrouter',
+    color: '#ff6b6b',
+    models: [
+      'deepseek/deepseek-v4-flash:free',
+      'google/gemma-4-26b-a4b-it:free',
+      'google/gemma-4-31b-it:free',
+      'meta-llama/llama-3.3-70b-instruct:free',
+      'qwen/qwen3-coder:free',
+      'nvidia/nemotron-3-super-120b-a12b:free',
+      'liquid/lfm-2.5-1.2b-thinking:free',
+      'minimax/minimax-m2.5:free',
+      'arcee-ai/trinity-large-thinking:free',
+      'openrouter/free'
+    ]
+  }
+];
+
+const AGENTS = ['triage', 'researcher', 'coder', 'writer', 'reviewer'];
+const TASKS = [
+  'Analyzing project architecture...',
+  'Scanning codebase dependencies...',
+  'Generating component tree...',
+  'Running consciousness broadcast...',
+  'Evaluating model performance...',
+  'Synthesizing context summary...',
+  'Building knowledge graph query...',
+  'Checking API health endpoints...',
+  'Routing task to best model...',
+  'Executing parallel agents...',
+  'Processing tool registry...',
+  'Validating provider chain...',
+  'Computing fallback strategy...',
+  'Merging agent results...',
+  'Optimizing response pipeline...',
+];
+
+// ═══════════════════════════════════════
+// PARTICLE BACKGROUND
+// ═══════════════════════════════════════
+
+const pCanvas = document.getElementById('particleCanvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+
+function resizeParticles() {
+  pCanvas.width = window.innerWidth;
+  pCanvas.height = window.innerHeight;
+}
+resizeParticles();
+window.addEventListener('resize', resizeParticles);
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * pCanvas.width;
+    this.y = Math.random() * pCanvas.height;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.size = Math.random() * 2 + 0.5;
+    this.alpha = Math.random() * 0.5 + 0.1;
+    this.hue = Math.random() * 60 + 240;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < 0 || this.x > pCanvas.width) this.vx *= -1;
+    if (this.y < 0 || this.y > pCanvas.height) this.vy *= -1;
+  }
+  draw() {
+    pCtx.beginPath();
+    pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    pCtx.fillStyle = `hsla(${this.hue}, 70%, 60%, ${this.alpha})`;
+    pCtx.fill();
+  }
+}
+
+for (let i = 0; i < 100; i++) particles.push(new Particle());
+
+let pMouse = { x: -1000, y: -1000 };
+window.addEventListener('mousemove', e => { pMouse.x = e.clientX; pMouse.y = e.clientY; });
+
+function drawConnections() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120) {
+        pCtx.beginPath();
+        pCtx.moveTo(particles[i].x, particles[i].y);
+        pCtx.lineTo(particles[j].x, particles[j].y);
+        pCtx.strokeStyle = `rgba(108,92,231,${(1 - dist / 120) * 0.15})`;
+        pCtx.lineWidth = 0.5;
+        pCtx.stroke();
+      }
+    }
+  }
+}
+
+function animateParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+  particles.forEach(p => {
+    const dx = pMouse.x - p.x;
+    const dy = pMouse.y - p.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 150) {
+      p.vx -= dx / dist * 0.02;
+      p.vy -= dy / dist * 0.02;
+    }
+  });
+  drawConnections();
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ═══════════════════════════════════════
+// AGENT GRAPH VISUALIZATION
+// ═══════════════════════════════════════
+
+const aCanvas = document.getElementById('agentCanvas');
+const aCtx = aCanvas.getContext('2d');
+let agentNodes = [];
+let graphEdges = [];
+let graphAnimFrame = null;
+
+function resizeAgentCanvas() {
+  const rect = aCanvas.parentElement.getBoundingClientRect();
+  aCanvas.width = rect.width;
+  aCanvas.height = rect.height;
+}
+resizeAgentCanvas();
+window.addEventListener('resize', resizeAgentCanvas);
+
+const COLORS = {
+  triage: '#6c5ce7',
+  researcher: '#00cec9',
+  coder: '#fdcb6e',
+  writer: '#fd79a8',
+  reviewer: '#74b9ff',
+};
+
+function initGraph() {
+  const cx = aCanvas.width / 2;
+  const cy = aCanvas.height / 2;
+  const r = Math.min(aCanvas.width, aCanvas.height) * 0.3;
+
+  agentNodes = AGENTS.map((name, i) => {
+    const angle = (i / AGENTS.length) * Math.PI * 2 - Math.PI / 2;
+    return {
+      name,
+      x: cx + r * Math.cos(angle),
+      y: cy + r * Math.sin(angle),
+      vx: 0, vy: 0,
+      targetX: cx + r * Math.cos(angle),
+      targetY: cy + r * Math.sin(angle),
+      color: COLORS[name] || '#888',
+      active: false,
+      progress: 0,
+      pulse: 0,
+      pulsePhase: Math.random() * Math.PI * 2,
+    };
+  });
+
+  graphEdges = [];
+  const pairs = [
+    ['triage', 'researcher'], ['triage', 'coder'],
+    ['researcher', 'coder'], ['coder', 'writer'],
+    ['writer', 'reviewer'], ['reviewer', 'triage'],
+    ['researcher', 'writer'], ['triage', 'reviewer'],
+  ];
+  pairs.forEach(([s, t]) => {
+    graphEdges.push({ source: s, target: t, active: false, pulse: 0 });
+  });
+}
+
+function getNode(name) { return agentNodes.find(n => n.name === name); }
+
+function setAgentActive(name, active) {
+  const n = getNode(name);
+  if (n) n.active = active;
+}
+
+function setEdgeActive(source, target, active) {
+  graphEdges.forEach(e => {
+    if ((e.source === source && e.target === target) || (e.source === target && e.target === source)) {
+      e.active = active;
+      if (active) e.pulse = 1;
+    }
+  });
+}
+
+function drawGraph() {
+  aCtx.clearRect(0, 0, aCanvas.width, aCanvas.height);
+  const cx = aCanvas.width / 2;
+  const cy = aCanvas.height / 2;
+
+  // Central hub glow
+  const hubGrad = aCtx.createRadialGradient(cx, cy, 0, cx, cy, 60);
+  hubGrad.addColorStop(0, 'rgba(108,92,231,0.15)');
+  hubGrad.addColorStop(1, 'rgba(108,92,231,0)');
+  aCtx.fillStyle = hubGrad;
+  aCtx.beginPath();
+  aCtx.arc(cx, cy, 60, 0, Math.PI * 2);
+  aCtx.fill();
+
+  // Center label
+  aCtx.fillStyle = 'rgba(224,224,240,0.2)';
+  aCtx.font = '10px "Inter", sans-serif';
+  aCtx.textAlign = 'center';
+  aCtx.fillText('consciousness', cx, cy + 3);
+
+  // Edges
+  graphEdges.forEach(e => {
+    const s = getNode(e.source), t = getNode(e.target);
+    if (!s || !t) return;
+    const alpha = e.active ? 0.8 : 0.15;
+    const width = e.active ? 2.5 : 0.5;
+
+    aCtx.beginPath();
+    aCtx.moveTo(s.x, s.y);
+    aCtx.lineTo(t.x, t.y);
+    aCtx.strokeStyle = e.active ? `rgba(0,206,201,${alpha})` : `rgba(136,136,170,${alpha})`;
+    aCtx.lineWidth = width;
+    aCtx.stroke();
+
+    // Pulse along active edges
+    if (e.active && e.pulse > 0) {
+      const px = s.x + (t.x - s.x) * e.pulse;
+      const py = s.y + (t.y - s.y) * e.pulse;
+      const grad = aCtx.createRadialGradient(px, py, 0, px, py, 6);
+      grad.addColorStop(0, 'rgba(0,206,201,0.6)');
+      grad.addColorStop(1, 'rgba(0,206,201,0)');
+      aCtx.fillStyle = grad;
+      aCtx.beginPath();
+      aCtx.arc(px, py, 6, 0, Math.PI * 2);
+      aCtx.fill();
+      e.pulse -= 0.008;
+      if (e.pulse < 0) e.pulse = 1;
+    }
+  });
+
+  // Nodes
+  agentNodes.forEach(n => {
+    // Subtle orbit
+    n.targetX = cx + (n.x - cx) * 0.98 + (n.targetX - cx) * 0.02;
+    n.targetY = cy + (n.y - cy) * 0.98 + (n.targetY - cy) * 0.02;
+    n.x += (n.targetX - n.x) * 0.05;
+    n.y += (n.targetY - n.y) * 0.05;
+
+    // Glow
+    if (n.active) {
+      const glow = aCtx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 30);
+      glow.addColorStop(0, `${n.color}40`);
+      glow.addColorStop(1, `${n.color}00`);
+      aCtx.fillStyle = glow;
+      aCtx.beginPath();
+      aCtx.arc(n.x, n.y, 30, 0, Math.PI * 2);
+      aCtx.fill();
+    }
+
+    // Node circle
+    aCtx.beginPath();
+    aCtx.arc(n.x, n.y, n.active ? 14 : 10, 0, Math.PI * 2);
+    aCtx.fillStyle = n.active ? n.color : `${n.color}60`;
+    aCtx.fill();
+    aCtx.strokeStyle = n.active ? '#fff' : `${n.color}40`;
+    aCtx.lineWidth = n.active ? 2 : 1;
+    aCtx.stroke();
+
+    // Label
+    aCtx.fillStyle = n.active ? '#fff' : 'rgba(224,224,240,0.6)';
+    aCtx.font = n.active ? 'bold 10px "Inter", sans-serif' : '9px "Inter", sans-serif';
+    aCtx.textAlign = 'center';
+    aCtx.fillText(n.name, n.x, n.y + 26);
+
+    // Progress ring
+    if (n.progress > 0) {
+      aCtx.beginPath();
+      aCtx.arc(n.x, n.y, 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * n.progress);
+      aCtx.strokeStyle = n.color;
+      aCtx.lineWidth = 2;
+      aCtx.lineCap = 'round';
+      aCtx.stroke();
+    }
+  });
+
+  graphAnimFrame = requestAnimationFrame(drawGraph);
+}
+
+initGraph();
+drawGraph();
+
+// ═══════════════════════════════════════
+// PROVIDER SIDEBAR
+// ═══════════════════════════════════════
+
+const sidebar = document.getElementById('sidebar');
+
+function renderProviders() {
+  sidebar.innerHTML = '';
+  PROVIDERS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'provider-card';
+    card.id = `provider-${p.name}`;
+    card.innerHTML = `
+      <div class="name">
+        <span style="color:${p.color}">${p.name}</span>
+        <span class="count">${p.models.length} models</span>
+      </div>
+      <div class="models" id="models-${p.name}">
+        ${p.models.map(m => `<span class="model-chip" data-provider="${p.name}" data-model="${m}">${m}</span>`).join('')}
+      </div>
+    `;
+    sidebar.appendChild(card);
+  });
+}
+renderProviders();
+
+let usedModels = new Set();
+let activeModel = null;
+
+function markModelUsed(provider, model) {
+  const key = `${provider}:${model}`;
+  usedModels.add(key);
+  document.querySelectorAll(`.model-chip[data-provider="${provider}"][data-model="${model}"]`).forEach(el => {
+    el.classList.add('used');
+  });
+  document.getElementById('modelsUsed').textContent = usedModels.size;
+}
+
+function markModelActive(provider, model) {
+  if (activeModel) {
+    document.querySelectorAll(`.model-chip.active`).forEach(el => el.classList.remove('active'));
+  }
+  activeModel = `${provider}:${model}`;
+  document.querySelectorAll(`.model-chip[data-provider="${provider}"][data-model="${model}"]`).forEach(el => {
+    el.classList.add('active');
+  });
+  document.getElementById('footerRight').textContent = `model: ${provider}:${model}`;
+}
+
+function markProviderActive(name, active) {
+  const card = document.getElementById(`provider-${name}`);
+  if (card) card.classList.toggle('active', active);
+}
+
+// ═══════════════════════════════════════
+// AGENT OUTPUT PANEL
+// ═══════════════════════════════════════
+
+const agentTabs = document.getElementById('agentTabs');
+const agentOutput = document.getElementById('agentOutput');
+let currentAgentTab = 'system';
+let agentLogs = { system: [] };
+
+AGENTS.forEach(a => { agentLogs[a] = []; });
+
+function renderAgentTabs() {
+  agentTabs.innerHTML = '';
+  const allTabs = ['system', ...AGENTS];
+  allTabs.forEach(name => {
+    const tab = document.createElement('button');
+    tab.className = `agent-tab${name === currentAgentTab ? ' active' : ''}`;
+    tab.textContent = name;
+    tab.dataset.agent = name;
+    tab.onclick = () => switchAgentTab(name);
+    agentTabs.appendChild(tab);
+  });
+}
+renderAgentTabs();
+
+function switchAgentTab(name) {
+  currentAgentTab = name;
+  document.querySelectorAll('.agent-tab').forEach(t => t.classList.toggle('active', t.dataset.agent === name));
+  renderAgentOutput();
+}
+
+function renderAgentOutput() {
+  agentOutput.innerHTML = '';
+  const logs = agentLogs[currentAgentTab] || [];
+  logs.forEach(line => {
+    const div = document.createElement('div');
+    div.className = `line ${line.type}`;
+    div.textContent = line.text;
+    agentOutput.appendChild(div);
+  });
+  agentOutput.scrollTop = agentOutput.scrollHeight;
+}
+
+function addLog(agent, text, type = 'system') {
+  if (!agentLogs[agent]) agentLogs[agent] = [];
+  agentLogs[agent].push({ text, type, time: Date.now() });
+  if (agent === currentAgentTab || (agent !== 'system' && currentAgentTab === 'system')) {
+    const div = document.createElement('div');
+    div.className = `line ${type}`;
+    div.textContent = text;
+    agentOutput.appendChild(div);
+    agentOutput.scrollTop = agentOutput.scrollHeight;
+  }
+  // Update badge count
+  document.querySelectorAll(`.agent-tab`).forEach(t => {
+    if (t.dataset.agent === agent) {
+      const count = agentLogs[agent].length;
+      let badge = t.querySelector('.badge');
+      if (!badge) { badge = document.createElement('span'); badge.className = 'badge'; t.appendChild(badge); }
+      badge.textContent = count;
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// EVENT LOG
+// ═══════════════════════════════════════
+
+const eventLog = document.getElementById('eventLog');
+let eventCount = 0;
+
+function addEvent(type, source, text) {
+  eventCount++;
+  document.getElementById('eventsCount').textContent = eventCount;
+
+  const entry = document.createElement('div');
+  entry.className = `event-entry ${type}`;
+  const time = new Date().toLocaleTimeString();
+  entry.innerHTML = `
+    <div class="time">${time} · ${source}</div>
+    <div class="label">${text}</div>
+  `;
+  eventLog.prepend(entry);
+
+  // Keep max 50
+  while (eventLog.children.length > 50) eventLog.removeChild(eventLog.lastChild);
+
+  updateProgress();
+}
+
+// ═══════════════════════════════════════
+// SIMULATION ENGINE
+// ═══════════════════════════════════════
+
+let simulationRunning = false;
+let simulationStep = 0;
+const TOTAL_STEPS = 80;
+
+function updateProgress() {
+  const pct = Math.min(100, (simulationStep / TOTAL_STEPS) * 100);
+  document.getElementById('progressFill').style.width = `${pct}%`;
+}
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function startSimulation() {
+  if (simulationRunning) return;
+  simulationRunning = true;
+  simulationStep = 0;
+  document.getElementById('statusText').textContent = 'running...';
+  document.getElementById('agentsActive').textContent = '0';
+
+  // Clear previous
+  Object.keys(agentLogs).forEach(k => { agentLogs[k] = []; });
+  eventLog.innerHTML = '';
+  eventCount = 0;
+  document.getElementById('eventsCount').textContent = '0';
+  usedModels = new Set();
+  document.getElementById('modelsUsed').textContent = '0';
+  document.querySelectorAll('.model-chip.used, .model-chip.active').forEach(el => {
+    el.classList.remove('used', 'active');
+  });
+  document.querySelectorAll('.provider-card.active').forEach(el => el.classList.remove('active'));
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('footerRight').textContent = 'model: —';
+  renderAgentOutput();
+
+  addLog('system', '═══ Agent Swarm Session Start ═══', 'system');
+  addLog('system', 'Initializing consciousness hub...', 'system');
+
+  runStep();
+}
+
+function runStep() {
+  if (!simulationRunning || simulationStep >= TOTAL_STEPS) {
+    endSimulation();
+    return;
+  }
+
+  simulationStep++;
+  const phase = simulationStep / TOTAL_STEPS;
+  updateProgress();
+
+  // Determine which agent works this step
+  const agent = pickRandom(AGENTS);
+  const provider = pickRandom(PROVIDERS);
+  const model = pickRandom(provider.models);
+  const task = pickRandom(TASKS);
+
+  // === VISUAL UPDATES ===
+
+  // Deactivate all agents, activate current
+  agentNodes.forEach(n => { n.active = false; n.progress = 0; });
+  setAgentActive(agent, true);
+
+  // Progress animation
+  const activeNode = getNode(agent);
+  if (activeNode) activeNode.progress = Math.random() * 0.8 + 0.1;
+
+  // Random edge activation (consciousness broadcast)
+  graphEdges.forEach(e => { e.active = Math.random() < 0.3; });
+
+  // Provider/model visuals
+  markProviderActive(provider.name, true);
+  markModelUsed(provider.name, model);
+  if (Math.random() < 0.3) markModelActive(provider.name, model);
+
+  // Agent count
+  const activeCount = agentNodes.filter(n => n.active).length + Math.floor(Math.random() * 3);
+  document.getElementById('agentsActive').textContent = activeCount;
+
+  // === LOGS ===
+  const eventTypes = ['state_change', 'progress', 'completion', 'switch', 'diagnostic', 'error'];
+  const eventType = simulationStep < 5 ? 'state_change' :
+                    simulationStep > TOTAL_STEPS - 5 ? 'completion' :
+                    pickRandom(eventTypes);
+
+  switch (eventType) {
+    case 'state_change':
+      addLog(agent, `[state] ${agent} → ${task}`, 'agent');
+      addLog('system', `Routing ${agent} via ${provider.name}:${model}`, 'system');
+      addEvent('state_change', agent, `State: ${task.substring(0, 40)}`);
+      break;
+    case 'progress':
+      addLog(agent, `[progress] ${task.substring(0, 30)}...  ${Math.floor(Math.random() * 40 + 30)}%`, 'progress');
+      addEvent('progress', agent, `${task.substring(0, 35)}`);
+      break;
+    case 'completion':
+      addLog(agent, `[done] ✓ task completed in ${Math.floor(Math.random() * 3000 + 500)}ms`, 'complete');
+      addEvent('completion', agent, `Completed → ${Math.floor(Math.random() * 1000)} tokens`);
+      break;
+    case 'switch':
+      const prevProvider = pickRandom(PROVIDERS);
+      const prevModel = pickRandom(prevProvider.models);
+      addLog(agent, `[switch] ${prevProvider.name}:${prevModel} → ${provider.name}:${model}`, 'switch');
+      addEvent('switch', agent, `Fallback: ${prevProvider.name} → ${provider.name}`);
+      markModelActive(provider.name, model);
+      break;
+    case 'diagnostic':
+      addLog('system', `[diag] React Doctor: score ${Math.floor(Math.random() * 40 + 60)}/100`, 'system');
+      addEvent('diagnostic', 'react_doctor', `Health score: ${Math.floor(Math.random() * 30 + 70)}`);
+      break;
+    case 'error':
+      addLog(agent, `[error] ${pickRandom(['timeout', 'rate limit', 'context overflow'])}`, 'error');
+      addEvent('error', agent, '⚠️ Model error, triggering fallback...');
+      break;
+  }
+
+  // Consciousness live updates
+  addLog('system', `[consciousness] broadcasting ${agent} → ${AGENTS.filter(a => a !== agent).slice(0, 2).join(', ')}`, 'system');
+
+  // Status
+  document.getElementById('statusText').textContent = `step ${simulationStep}/${TOTAL_STEPS} · ${agent}`;
+
+  // Schedule next step
+  setTimeout(runStep, 400 + Math.random() * 600);
+}
+
+function endSimulation() {
+  simulationRunning = false;
+  document.getElementById('statusText').textContent = '✅ complete';
+  document.getElementById('progressFill').style.width = '100%';
+
+  addLog('system', '', 'system');
+  addLog('system', '═══ Session Complete ═══', 'system');
+  addLog('system', `Agents: ${AGENTS.length} | Models used: ${usedModels.size} | Events: ${eventCount}`, 'system');
+  addLog('system', '✓ All agents synchronized via consciousness', 'complete');
+
+  addEvent('completion', 'system', '🏁 Swarm session finished');
+  addEvent('completion', 'system', `📊 ${usedModels.size} models across ${PROVIDERS.length} providers`);
+
+  // Glow effect on all nodes briefly
+  agentNodes.forEach(n => { n.active = true; });
+  setTimeout(() => {
+    agentNodes.forEach(n => { n.active = false; });
+  }, 2000);
+
+  document.getElementById('recBtn').textContent = '⏺ Record';
+  document.getElementById('recBtn').className = 'rec-badge idle';
+}
+
+// ═══════════════════════════════════════
+// RECORDING — MediaRecorder API
+// ═══════════════════════════════════════
+
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
+
+document.getElementById('recBtn').addEventListener('click', async () => {
+  if (isRecording) {
+    stopRecording();
+    return;
+  }
+  startRecording();
+});
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { displaySurface: 'browser' },
+      audio: false,
+    });
+
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      saveRecording();
+      stream.getTracks().forEach(t => t.stop());
+    };
+
+    mediaRecorder.start(100); // chunk every 100ms
+    isRecording = true;
+
+    document.getElementById('recBtn').textContent = '⏹ Stop';
+    document.getElementById('recBtn').className = 'rec-badge recording';
+    document.getElementById('recordingOverlay').style.display = 'block';
+    document.getElementById('statusText').textContent = '🔴 recording...';
+
+    // Auto-start simulation if not running
+    if (!simulationRunning) startSimulation();
+
+  } catch (err) {
+    console.error('Recording error:', err);
+    alert('Could not start recording. Make sure to select a screen/window to share.');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  isRecording = false;
+  document.getElementById('recBtn').textContent = '⏺ Saving...';
+  document.getElementById('recBtn').className = 'rec-badge saving';
+  document.getElementById('recordingOverlay').style.display = 'none';
+}
+
+function saveRecording() {
+  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  a.href = url;
+  a.download = `swarm-session-${timestamp}.webm`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  document.getElementById('recBtn').textContent = '⏺ Record';
+  document.getElementById('recBtn').className = 'rec-badge idle';
+  document.getElementById('statusText').textContent = '✅ video saved';
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+
+addLog('system', 'Agent Swarm Visualizer loaded', 'system');
+addLog('system', `3 providers · ${PROVIDERS.reduce((s, p) => s + p.models.length, 0)} models · ${AGENTS.length} agents`, 'system');
+addLog('system', 'Click "Record" to capture a session, or watch the live demo', 'system');
+document.getElementById('statusText').textContent = 'ready';
+
+// Auto-start demo after 1s
+setTimeout(startSimulation, 1000);
+</script>
+</body>
+</html>

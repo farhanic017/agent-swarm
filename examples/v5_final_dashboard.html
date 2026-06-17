@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Swarm Real-Time Dashboard</title>
+  <style>
+    :root {
+      --bg: #101114;
+      --panel: #181a20;
+      --panel-2: #20232b;
+      --line: #343946;
+      --text: #f4f6fb;
+      --muted: #aab1c0;
+      --green: #3ddc97;
+      --yellow: #ffd166;
+      --red: #ff6b6b;
+      --blue: #67b7ff;
+      --violet: #b695ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .shell {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr) 360px;
+      grid-template-rows: 60px minmax(0, 1fr);
+      height: 100vh;
+    }
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    h1 { font-size: 18px; margin: 0; letter-spacing: 0; }
+    .metrics { display: flex; gap: 18px; color: var(--muted); font-size: 13px; }
+    aside, main, section { min-height: 0; overflow: auto; }
+    aside { border-right: 1px solid var(--line); background: var(--panel); padding: 12px; }
+    main { padding: 16px; }
+    section { border-left: 1px solid var(--line); background: var(--panel); padding: 12px; }
+    .pillars { display: grid; gap: 10px; }
+    .pillar { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); padding: 10px; }
+    .pillar h2 { font-size: 12px; color: var(--muted); text-transform: uppercase; margin: 0 0 8px; letter-spacing: .08em; }
+    .agent {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      padding: 8px;
+      margin-top: 6px;
+      color: var(--text);
+      background: #14161b;
+      text-align: left;
+      cursor: pointer;
+    }
+    .agent:hover, .agent.active { border-color: var(--blue); }
+    .agent small { color: var(--muted); }
+    .live-graph {
+      position: relative;
+      height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0b0d10;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    #agentGraph { width: 100%; height: 100%; display: block; }
+    .graph-toolbar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 2;
+    }
+    .graph-toolbar button {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+    .graph-toolbar button:hover { border-color: var(--blue); }
+    .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .lane { min-height: 180px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 12px; }
+    .lane h2, section h2 { margin: 0 0 10px; font-size: 14px; }
+    .event { border-left: 3px solid var(--blue); padding: 8px 10px; margin: 8px 0; background: var(--panel-2); border-radius: 6px; font-size: 13px; }
+    .event.done { border-color: var(--green); }
+    .event.vote { border-color: var(--yellow); }
+    pre {
+      margin: 12px 0 0;
+      min-height: 260px;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #0b0d10;
+      color: #d8f3dc;
+      font: 13px/1.55 "JetBrains Mono", Consolas, monospace;
+    }
+    .cursor { display: inline-block; width: 7px; height: 15px; background: var(--green); vertical-align: -2px; animation: blink .8s steps(2) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .vote-row { border: 1px solid var(--line); border-radius: 7px; padding: 9px; margin: 8px 0; background: var(--panel-2); }
+    .vote-row strong { color: var(--green); }
+    .risk { color: var(--red); }
+    @media (max-width: 1000px) {
+      .shell { grid-template-columns: 1fr; grid-template-rows: auto auto auto auto; height: auto; }
+      header, aside, main, section { grid-column: auto; border: 0; }
+      .board { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>Agent Swarm Real-Time Dashboard</h1>
+      <div class="metrics">
+        <span id="agentCount"></span>
+        <span id="modelCount"></span>
+        <span id="confidence"></span>
+      </div>
+    </header>
+    <aside>
+      <div class="pillars" id="pillars"></div>
+    </aside>
+    <main>
+      <div class="live-graph">
+        <div class="graph-toolbar">
+          <button id="playGraph" type="button">Live demo</button>
+          <button id="pauseGraph" type="button">Pause</button>
+        </div>
+        <canvas id="agentGraph"></canvas>
+      </div>
+      <div class="board">
+        <div class="lane"><h2>Live Work</h2><div id="work"></div></div>
+        <div class="lane"><h2>Logic Flow</h2><div id="logic"></div></div>
+        <div class="lane"><h2>File Growth</h2><div id="growth"></div></div>
+      </div>
+      <pre id="code"></pre>
+    </main>
+    <section>
+      <h2>Council Meeting</h2>
+      <div id="council"></div>
+      <h2>A/B Selection</h2>
+      <div id="abTest"></div>
+    </section>
+  </div>
+  <script>
+    const payload = {"agents": [{"name": "triage", "pillar": "act", "category": "core", "model": "azure-openai:gpt-5.4", "model_preference": "best", "provider": "azure-openai", "route_type": "cloud", "selection_rationale": "matches reasoning; decision agent needs reasoning; premium decision model; provider diversity", "description": "Routes work to the best specialist.", "sub_agent_roles": ["researcher", "product_manager", "council_master"], "code": "# triage\nreview('act', 'core')\n"}, {"name": "researcher", "pillar": "see", "category": "core", "model": "cloudflare:@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "provider": "cloudflare", "route_type": "cloud", "selection_rationale": "matches reasoning; sub-agent cost efficient; provider diversity", "description": "Researches facts, sources, markets, and prior art.", "sub_agent_roles": ["analytics", "legal", "ux_research"], "code": "# researcher\nreview('see', 'core')\n"}, {"name": "coder", "pillar": "code", "category": "coding", "model": "mistral:codestral-latest", "model_preference": "coding", "provider": "mistral", "route_type": "cloud", "selection_rationale": "matches coding; provider diversity", "description": "Builds features, refactors code, and writes implementation notes.", "sub_agent_roles": ["backend_api", "frontend_ui", "testing", "security"], "code": "def build_feature(request):\n    validate_request(request)\n    return implement(request)\n"}, {"name": "backend_api", "pillar": "code", "category": "coding", "model": "groq:qwen/qwen3-32b", "model_preference": "coding", "provider": "groq", "route_type": "cloud", "selection_rationale": "matches coding; provider diversity", "description": "Builds backend routes, data contracts, service logic, validation, auth boundaries, and API integration tests.", "sub_agent_roles": ["security", "testing", "documentation"], "code": "# backend_api\nreview('code', 'coding')\n"}, {"name": "frontend_ui", "pillar": "design", "category": "coding", "model": "google-ai:gemini/gemini-2.5-flash", "model_preference": "coding", "provider": "google-ai", "route_type": "cloud", "selection_rationale": "sub-agent cost efficient; provider diversity", "description": "Builds frontend UI, state, accessibility, responsive layout, component wiring, and browser-facing flows.", "sub_agent_roles": ["ux_research", "testing", "documentation"], "code": "# frontend_ui\nreview('design', 'coding')\n"}, {"name": "reviewer", "pillar": "code", "category": "coding", "model": "zai:glm-4.5", "model_preference": "coding", "provider": "zai", "route_type": "cloud", "selection_rationale": "matches coding", "description": "Reviews quality, correctness, and release readiness.", "sub_agent_roles": ["ai_reviewer", "testing", "security", "coder"], "code": "# reviewer\nreview('code', 'coding')\n"}, {"name": "ai_reviewer", "pillar": "code", "category": "coding", "model": "cloudflare:@cf/zai-org/glm-4.7-flash", "model_preference": "coding", "provider": "cloudflare", "route_type": "cloud", "selection_rationale": "matches coding; sub-agent cost efficient", "description": "Reviews every individual agent output before integration, posts PR inline comment payloads, and sends fixes back to the responsible agent.", "sub_agent_roles": ["security", "testing", "debugging", "coder"], "code": "# ai_reviewer\nreview('code', 'coding')\n"}, {"name": "writer", "pillar": "design", "category": "creative", "model": "google-ai:gemini/gemini-2.5-flash", "model_preference": "chat", "provider": "google-ai", "route_type": "cloud", "selection_rationale": "matches chat", "description": "Creates user-facing copy, docs, and summaries.", "sub_agent_roles": ["text_editor", "marketing", "localization", "reviewer"], "code": "# writer\nreview('design', 'creative')\n"}, {"name": "documentation", "pillar": "design", "category": "creative", "model": "mistral:mistral-small-latest", "model_preference": "chat", "provider": "mistral", "route_type": "cloud", "selection_rationale": "matches chat", "description": "Writes README updates, install guides, API docs, changelogs, and docs-source-backed implementation notes.", "sub_agent_roles": ["writer", "reviewer", "localization"], "code": "# documentation\nreview('design', 'creative')\n"}, {"name": "text_editor", "pillar": "design", "category": "creative", "model": "google-ai:gemini/gemini-2.5-flash", "model_preference": "chat", "provider": "google-ai", "route_type": "cloud", "selection_rationale": "matches chat; sub-agent cost efficient", "description": "Edits, rewrites, proofreads, and adapts text while preserving intent.", "sub_agent_roles": ["writer", "localization", "reviewer"], "code": "# text_editor\nreview('design', 'creative')\n"}, {"name": "prompt_generator", "pillar": "design", "category": "creative", "model": "groq:llama-3.1-8b-instant", "model_preference": "chat", "provider": "groq", "route_type": "cloud", "selection_rationale": "matches chat", "description": "Creates concise, reusable prompts for text, voice, image, video, design, browser, and coding agents.", "sub_agent_roles": ["writer", "photo_editor", "video_editor", "design"], "code": "# prompt_generator\nreview('design', 'creative')\n"}, {"name": "security", "pillar": "code", "category": "coding", "model": "azure-openai:gpt-5.4-mini", "model_preference": "reasoning", "provider": "azure-openai", "route_type": "cloud", "selection_rationale": "matches reasoning; sub-agent cost efficient", "description": "Threat models, audits auth/data flows, and checks abuse paths.", "sub_agent_roles": ["testing", "debugging", "legal"], "code": "def audit_change(change):\n    assert no_secrets_leaked(change)\n    assert permissions_are_minimal(change)\n"}, {"name": "testing", "pillar": "code", "category": "coding", "model": "cloudflare:@cf/zai-org/glm-4.7-flash", "model_preference": "coding", "provider": "cloudflare", "route_type": "cloud", "selection_rationale": "matches coding; sub-agent cost efficient", "description": "Designs and runs aggressive test coverage across edge cases.", "sub_agent_roles": ["debugging", "coder", "reviewer"], "code": "def test_feature_edge_cases():\n    assert feature_handles_empty_input()\n    assert feature_is_accessible()\n"}, {"name": "debugging", "pillar": "code", "category": "coding", "model": "openrouter:openai/gpt-oss-120b:free", "model_preference": "coding", "provider": "openrouter", "route_type": "cloud", "selection_rationale": "matches coding; sub-agent cost efficient", "description": "Finds root causes and proposes minimal fixes.", "sub_agent_roles": ["testing", "coder", "security"], "code": "# debugging\nreview('code', 'coding')\n"}, {"name": "marketing", "pillar": "act", "category": "business", "model": "azure-openai:gpt-5.4-mini", "model_preference": "reasoning", "provider": "azure-openai", "route_type": "cloud", "selection_rationale": "matches reasoning; sub-agent cost efficient", "description": "Assesses positioning, launch demand, and growth impact.", "sub_agent_roles": ["analytics", "sales", "ux_research"], "code": "# marketing\nreview('act', 'business')\n"}, {"name": "finance", "pillar": "act", "category": "business", "model": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "provider": "fireworks", "route_type": "cloud", "selection_rationale": "matches reasoning; strong primary model", "description": "Models costs, ROI, pricing, and financial risk.", "sub_agent_roles": ["analytics", "legal", "trading"], "code": "# finance\nreview('act', 'business')\n"}, {"name": "analytics", "pillar": "see", "category": "business", "model": "cerebras:zai-glm-4.7", "model_preference": "reasoning", "provider": "cerebras", "route_type": "cloud", "selection_rationale": "matches reasoning; provider diversity", "description": "Defines metrics, instrumentation, and data-backed conclusions.", "sub_agent_roles": ["researcher", "finance", "marketing"], "code": "track('feature_decision', { vote: 'proceed', confidence: 96 });\n"}, {"name": "trading", "pillar": "act", "category": "business", "model": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "provider": "fireworks", "route_type": "cloud", "selection_rationale": "matches reasoning; strong primary model", "description": "Analyzes market structure and produces risk-scored trade plans.", "sub_agent_roles": ["finance", "analytics", "legal"], "code": "# trading\nreview('act', 'business')\n"}, {"name": "legal", "pillar": "act", "category": "business", "model": "openrouter:openrouter/free", "model_preference": "reasoning", "provider": "openrouter", "route_type": "cloud", "selection_rationale": "general fallback; sub-agent cost efficient; provider diversity", "description": "Flags compliance, contract, licensing, and policy risk.", "sub_agent_roles": ["security", "finance", "product_manager"], "code": "# legal\nreview('act', 'business')\n"}, {"name": "ux_research", "pillar": "see", "category": "business", "model": "azure-openai:gpt-5.4-mini", "model_preference": "reasoning", "provider": "azure-openai", "route_type": "cloud", "selection_rationale": "matches reasoning; sub-agent cost efficient", "description": "Studies user needs, usability, adoption, and feedback signals.", "sub_agent_roles": ["analytics", "design", "localization"], "code": "# ux_research\nreview('see', 'business')\n"}, {"name": "localization", "pillar": "design", "category": "business", "model": "zai:glm-4.5", "model_preference": "reasoning", "provider": "zai", "route_type": "cloud", "selection_rationale": "matches reasoning", "description": "Adapts product language, formatting, and culture-specific UX.", "sub_agent_roles": ["ux_research", "writer", "design"], "code": "# localization\nreview('design', 'business')\n"}, {"name": "product_manager", "pillar": "act", "category": "business", "model": "zai:glm-4.5", "model_preference": "reasoning", "provider": "zai", "route_type": "cloud", "selection_rationale": "matches reasoning; provider diversity", "description": "Turns goals into roadmap, requirements, and acceptance criteria.", "sub_agent_roles": ["analytics", "ux_research", "finance", "coder"], "code": "# product_manager\nreview('act', 'business')\n"}, {"name": "sales", "pillar": "act", "category": "business", "model": "azure-openai:gpt-5.4-mini", "model_preference": "reasoning", "provider": "azure-openai", "route_type": "cloud", "selection_rationale": "matches reasoning; sub-agent cost efficient", "description": "Evaluates buyer fit, objections, and revenue paths.", "sub_agent_roles": ["marketing", "analytics", "product_manager"], "code": "# sales\nreview('act', 'business')\n"}, {"name": "design", "pillar": "design", "category": "creative", "model": "mistral:mistral-small-latest", "model_preference": "chat", "provider": "mistral", "route_type": "cloud", "selection_rationale": "matches chat; sub-agent cost efficient", "description": "Creates product design direction, flows, layout, and interaction patterns.", "sub_agent_roles": ["ux_research", "figma_controller", "writer", "prompt_generator"], "code": "function renderDarkModeToggle() {\n  return segmentedControl(['Light', 'Dark', 'System']);\n}\n"}, {"name": "photo_editor", "pillar": "see", "category": "creative", "model": "cloudflare:@cf/zai-org/glm-4.7-flash", "model_preference": "image_generation", "provider": "cloudflare", "route_type": "cloud", "selection_rationale": "vision fallback for media generation; sub-agent cost efficient", "description": "Plans, generates, and critiques image assets, crops, retouching, masking, restoration, and asset polish.", "sub_agent_roles": ["design", "ux_research", "figma_controller"], "code": "# photo_editor\nreview('see', 'creative')\n"}, {"name": "video_editor", "pillar": "see", "category": "creative", "model": "groq:meta-llama/llama-4-scout-17b-16e-instruct", "model_preference": "video_generation", "provider": "groq", "route_type": "cloud", "selection_rationale": "vision fallback for media generation", "description": "Plans, generates, and critiques video clips, cuts, pacing, captions, transitions, color, thumbnails, and video polish.", "sub_agent_roles": ["design", "writer", "marketing", "prompt_generator"], "code": "# video_editor\nreview('see', 'creative')\n"}, {"name": "voice_transcriber", "pillar": "see", "category": "creative", "model": "openrouter:openrouter/free", "model_preference": "speech_to_text", "provider": "openrouter", "route_type": "cloud", "selection_rationale": "general fallback", "description": "Plans and runs speech-to-text transcription, diarization handoff, subtitle drafts, and transcript cleanup.", "sub_agent_roles": ["writer", "localization", "analytics"], "code": "# voice_transcriber\nreview('see', 'creative')\n"}, {"name": "voice_generator", "pillar": "design", "category": "creative", "model": "groq:llama-3.3-70b-versatile", "model_preference": "text_to_speech", "provider": "groq", "route_type": "cloud", "selection_rationale": "general fallback", "description": "Plans and runs text-to-speech voiceovers, narration drafts, voice style prompts, and audio export QA.", "sub_agent_roles": ["writer", "localization", "video_editor"], "code": "# voice_generator\nreview('design', 'creative')\n"}, {"name": "figma_controller", "pillar": "design", "category": "creative", "model": "google-ai:gemini/gemini-2.5-flash", "model_preference": "vision", "provider": "google-ai", "route_type": "cloud", "selection_rationale": "matches vision; sub-agent cost efficient", "description": "Coordinates Figma-oriented layout, component, and handoff changes.", "sub_agent_roles": ["design", "ux_research", "coder"], "code": "# figma_controller\nreview('design', 'creative')\n"}, {"name": "council_master", "pillar": "act", "category": "core", "model": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "provider": "fireworks", "route_type": "cloud", "selection_rationale": "matches reasoning; decision agent needs reasoning; premium decision model", "description": "Runs evidence review, debate, voting, and final confidence scoring.", "sub_agent_roles": ["researcher", "security", "testing", "analytics", "legal", "product_manager"], "code": "# council_master\nreview('act', 'core')\n"}], "provider_assignments": [{"agent_name": "triage", "role": "agent", "provider": "azure-openai", "model": "gpt-5.4", "model_ref": "azure-openai:gpt-5.4", "opencode_model": "azure-openai/gpt-5.4", "model_preference": "best", "parent_agent": "", "route_type": "cloud", "score": 120, "rationale": "matches reasoning; decision agent needs reasoning; premium decision model; provider diversity"}, {"agent_name": "researcher", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "triage", "route_type": "cloud", "score": 103, "rationale": "matches reasoning; sub-agent cost efficient; provider diversity"}, {"agent_name": "product_manager", "role": "sub_agent", "provider": "zai", "model": "glm-4.5", "model_ref": "zai:glm-4.5", "opencode_model": "zai/glm-4.5", "model_preference": "reasoning", "parent_agent": "triage", "route_type": "cloud", "score": 85, "rationale": "matches reasoning; provider diversity"}, {"agent_name": "researcher", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 93, "rationale": "matches reasoning; strong primary model; provider diversity"}, {"agent_name": "analytics", "role": "sub_agent", "provider": "cerebras", "model": "zai-glm-4.7", "model_ref": "cerebras:zai-glm-4.7", "opencode_model": "cerebras/zai-glm-4.7", "model_preference": "reasoning", "parent_agent": "researcher", "route_type": "cloud", "score": 85, "rationale": "matches reasoning; provider diversity"}, {"agent_name": "legal", "role": "sub_agent", "provider": "openrouter", "model": "openrouter/free", "model_ref": "openrouter:openrouter/free", "opencode_model": "openrouter/openrouter/free", "model_preference": "reasoning", "parent_agent": "researcher", "route_type": "cloud", "score": 65, "rationale": "general fallback; sub-agent cost efficient; provider diversity"}, {"agent_name": "coder", "role": "agent", "provider": "mistral", "model": "codestral-latest", "model_ref": "mistral:codestral-latest", "opencode_model": "mistral/codestral-latest", "model_preference": "coding", "parent_agent": "", "route_type": "cloud", "score": 85, "rationale": "matches coding; provider diversity"}, {"agent_name": "backend_api", "role": "sub_agent", "provider": "groq", "model": "qwen/qwen3-32b", "model_ref": "groq:qwen/qwen3-32b", "opencode_model": "groq/qwen/qwen3-32b", "model_preference": "coding", "parent_agent": "coder", "route_type": "cloud", "score": 85, "rationale": "matches coding; provider diversity"}, {"agent_name": "frontend_ui", "role": "sub_agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "coding", "parent_agent": "coder", "route_type": "cloud", "score": 53, "rationale": "sub-agent cost efficient; provider diversity"}, {"agent_name": "backend_api", "role": "agent", "provider": "openrouter", "model": "openai/gpt-oss-120b:free", "model_ref": "openrouter:openai/gpt-oss-120b:free", "opencode_model": "openrouter/openai/gpt-oss-120b:free", "model_preference": "coding", "parent_agent": "", "route_type": "cloud", "score": 38, "rationale": "matches coding"}, {"agent_name": "security", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "backend_api", "route_type": "cloud", "score": 56, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "testing", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "coding", "parent_agent": "backend_api", "route_type": "cloud", "score": 56, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "frontend_ui", "role": "agent", "provider": "mistral", "model": "codestral-latest", "model_ref": "mistral:codestral-latest", "opencode_model": "mistral/codestral-latest", "model_preference": "coding", "parent_agent": "", "route_type": "cloud", "score": 38, "rationale": "matches coding"}, {"agent_name": "ux_research", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "frontend_ui", "route_type": "cloud", "score": 44, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "testing", "role": "sub_agent", "provider": "openrouter", "model": "openai/gpt-oss-120b:free", "model_ref": "openrouter:openai/gpt-oss-120b:free", "opencode_model": "openrouter/openai/gpt-oss-120b:free", "model_preference": "coding", "parent_agent": "frontend_ui", "route_type": "cloud", "score": 44, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "reviewer", "role": "agent", "provider": "zai", "model": "glm-4.5", "model_ref": "zai:glm-4.5", "opencode_model": "zai/glm-4.5", "model_preference": "coding", "parent_agent": "", "route_type": "cloud", "score": 38, "rationale": "matches coding"}, {"agent_name": "ai_reviewer", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "coding", "parent_agent": "reviewer", "route_type": "cloud", "score": 44, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "testing", "role": "sub_agent", "provider": "groq", "model": "qwen/qwen3-32b", "model_ref": "groq:qwen/qwen3-32b", "opencode_model": "groq/qwen/qwen3-32b", "model_preference": "coding", "parent_agent": "reviewer", "route_type": "cloud", "score": 38, "rationale": "matches coding"}, {"agent_name": "ai_reviewer", "role": "agent", "provider": "cerebras", "model": "zai-glm-4.7", "model_ref": "cerebras:zai-glm-4.7", "opencode_model": "cerebras/zai-glm-4.7", "model_preference": "coding", "parent_agent": "", "route_type": "cloud", "score": 38, "rationale": "matches coding"}, {"agent_name": "security", "role": "sub_agent", "provider": "fireworks", "model": "accounts/fireworks/models/glm-5p1", "model_ref": "fireworks:accounts/fireworks/models/glm-5p1", "opencode_model": "fireworks/accounts/fireworks/models/glm-5p1", "model_preference": "reasoning", "parent_agent": "ai_reviewer", "route_type": "cloud", "score": 38, "rationale": "matches reasoning"}, {"agent_name": "testing", "role": "sub_agent", "provider": "openrouter", "model": "openai/gpt-oss-120b:free", "model_ref": "openrouter:openai/gpt-oss-120b:free", "opencode_model": "openrouter/openai/gpt-oss-120b:free", "model_preference": "coding", "parent_agent": "ai_reviewer", "route_type": "cloud", "score": 32, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "writer", "role": "agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "chat", "parent_agent": "", "route_type": "cloud", "score": 38, "rationale": "matches chat"}, {"agent_name": "text_editor", "role": "sub_agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "chat", "parent_agent": "writer", "route_type": "cloud", "score": 44, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "marketing", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "writer", "route_type": "cloud", "score": 32, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "documentation", "role": "agent", "provider": "mistral", "model": "mistral-small-latest", "model_ref": "mistral:mistral-small-latest", "opencode_model": "mistral/mistral-small-latest", "model_preference": "chat", "parent_agent": "", "route_type": "cloud", "score": 26, "rationale": "matches chat"}, {"agent_name": "writer", "role": "sub_agent", "provider": "groq", "model": "llama-3.1-8b-instant", "model_ref": "groq:llama-3.1-8b-instant", "opencode_model": "groq/llama-3.1-8b-instant", "model_preference": "chat", "parent_agent": "documentation", "route_type": "cloud", "score": 44, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "reviewer", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "coding", "parent_agent": "documentation", "route_type": "cloud", "score": 32, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "text_editor", "role": "agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "chat", "parent_agent": "", "route_type": "cloud", "score": 14, "rationale": "matches chat"}, {"agent_name": "writer", "role": "sub_agent", "provider": "mistral", "model": "mistral-small-latest", "model_ref": "mistral:mistral-small-latest", "opencode_model": "mistral/mistral-small-latest", "model_preference": "chat", "parent_agent": "text_editor", "route_type": "cloud", "score": 32, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "localization", "role": "sub_agent", "provider": "zai", "model": "glm-4.5", "model_ref": "zai:glm-4.5", "opencode_model": "zai/glm-4.5", "model_preference": "reasoning", "parent_agent": "text_editor", "route_type": "cloud", "score": 26, "rationale": "matches reasoning"}, {"agent_name": "prompt_generator", "role": "agent", "provider": "groq", "model": "llama-3.1-8b-instant", "model_ref": "groq:llama-3.1-8b-instant", "opencode_model": "groq/llama-3.1-8b-instant", "model_preference": "chat", "parent_agent": "", "route_type": "cloud", "score": 14, "rationale": "matches chat"}, {"agent_name": "writer", "role": "sub_agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "chat", "parent_agent": "prompt_generator", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "photo_editor", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "image_generation", "parent_agent": "prompt_generator", "route_type": "cloud", "score": 3, "rationale": "vision fallback for media generation; sub-agent cost efficient"}, {"agent_name": "security", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 34, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "testing", "role": "sub_agent", "provider": "cerebras", "model": "zai-glm-4.7", "model_ref": "cerebras:zai-glm-4.7", "opencode_model": "cerebras/zai-glm-4.7", "model_preference": "coding", "parent_agent": "security", "route_type": "cloud", "score": 26, "rationale": "matches coding"}, {"agent_name": "debugging", "role": "sub_agent", "provider": "openrouter", "model": "openai/gpt-oss-120b:free", "model_ref": "openrouter:openai/gpt-oss-120b:free", "opencode_model": "openrouter/openai/gpt-oss-120b:free", "model_preference": "coding", "parent_agent": "security", "route_type": "cloud", "score": 23, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "testing", "role": "agent", "provider": "zai", "model": "glm-4.5", "model_ref": "zai:glm-4.5", "opencode_model": "zai/glm-4.5", "model_preference": "coding", "parent_agent": "", "route_type": "cloud", "score": 14, "rationale": "matches coding"}, {"agent_name": "debugging", "role": "sub_agent", "provider": "openrouter", "model": "openai/gpt-oss-120b:free", "model_ref": "openrouter:openai/gpt-oss-120b:free", "opencode_model": "openrouter/openai/gpt-oss-120b:free", "model_preference": "coding", "parent_agent": "testing", "route_type": "cloud", "score": 23, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "coder", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "coding", "parent_agent": "testing", "route_type": "cloud", "score": 23, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "debugging", "role": "agent", "provider": "cerebras", "model": "zai-glm-4.7", "model_ref": "cerebras:zai-glm-4.7", "opencode_model": "cerebras/zai-glm-4.7", "model_preference": "coding", "parent_agent": "", "route_type": "cloud", "score": 14, "rationale": "matches coding"}, {"agent_name": "testing", "role": "sub_agent", "provider": "openrouter", "model": "openai/gpt-oss-120b:free", "model_ref": "openrouter:openai/gpt-oss-120b:free", "opencode_model": "openrouter/openai/gpt-oss-120b:free", "model_preference": "coding", "parent_agent": "debugging", "route_type": "cloud", "score": 23, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "coder", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "coding", "parent_agent": "debugging", "route_type": "cloud", "score": 23, "rationale": "matches coding; sub-agent cost efficient"}, {"agent_name": "marketing", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 22, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "analytics", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "marketing", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "sales", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "marketing", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "finance", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 13, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "analytics", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "finance", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "legal", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "finance", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "analytics", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 13, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "researcher", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "analytics", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "finance", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "analytics", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "trading", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 13, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "finance", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "trading", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "analytics", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "trading", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "legal", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 13, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "security", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "legal", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "finance", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "legal", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "ux_research", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 13, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "analytics", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "ux_research", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "design", "role": "sub_agent", "provider": "mistral", "model": "mistral-small-latest", "model_ref": "mistral:mistral-small-latest", "opencode_model": "mistral/mistral-small-latest", "model_preference": "chat", "parent_agent": "ux_research", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "localization", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 13, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "ux_research", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "localization", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "writer", "role": "sub_agent", "provider": "groq", "model": "llama-3.1-8b-instant", "model_ref": "groq:llama-3.1-8b-instant", "opencode_model": "groq/llama-3.1-8b-instant", "model_preference": "chat", "parent_agent": "localization", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "product_manager", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 13, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "analytics", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "product_manager", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "ux_research", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "product_manager", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "sales", "role": "agent", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 13, "rationale": "matches reasoning; strong primary model"}, {"agent_name": "marketing", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "sales", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "analytics", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "sales", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "design", "role": "agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "chat", "parent_agent": "", "route_type": "cloud", "score": 5, "rationale": "matches chat"}, {"agent_name": "ux_research", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "design", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "figma_controller", "role": "sub_agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "vision", "parent_agent": "design", "route_type": "cloud", "score": 23, "rationale": "matches vision; sub-agent cost efficient"}, {"agent_name": "photo_editor", "role": "agent", "provider": "groq", "model": "meta-llama/llama-4-scout-17b-16e-instruct", "model_ref": "groq:meta-llama/llama-4-scout-17b-16e-instruct", "opencode_model": "groq/meta-llama/llama-4-scout-17b-16e-instruct", "model_preference": "image_generation", "parent_agent": "", "route_type": "cloud", "score": -15, "rationale": "vision fallback for media generation"}, {"agent_name": "design", "role": "sub_agent", "provider": "mistral", "model": "mistral-small-latest", "model_ref": "mistral:mistral-small-latest", "opencode_model": "mistral/mistral-small-latest", "model_preference": "chat", "parent_agent": "photo_editor", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "ux_research", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "photo_editor", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "video_editor", "role": "agent", "provider": "groq", "model": "meta-llama/llama-4-scout-17b-16e-instruct", "model_ref": "groq:meta-llama/llama-4-scout-17b-16e-instruct", "opencode_model": "groq/meta-llama/llama-4-scout-17b-16e-instruct", "model_preference": "video_generation", "parent_agent": "", "route_type": "cloud", "score": -15, "rationale": "vision fallback for media generation"}, {"agent_name": "design", "role": "sub_agent", "provider": "mistral", "model": "mistral-small-latest", "model_ref": "mistral:mistral-small-latest", "opencode_model": "mistral/mistral-small-latest", "model_preference": "chat", "parent_agent": "video_editor", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "writer", "role": "sub_agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "chat", "parent_agent": "video_editor", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "voice_transcriber", "role": "agent", "provider": "openrouter", "model": "openrouter/free", "model_ref": "openrouter:openrouter/free", "opencode_model": "openrouter/openrouter/free", "model_preference": "speech_to_text", "parent_agent": "", "route_type": "cloud", "score": -33, "rationale": "general fallback"}, {"agent_name": "writer", "role": "sub_agent", "provider": "mistral", "model": "mistral-small-latest", "model_ref": "mistral:mistral-small-latest", "opencode_model": "mistral/mistral-small-latest", "model_preference": "chat", "parent_agent": "voice_transcriber", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "localization", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "voice_transcriber", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "voice_generator", "role": "agent", "provider": "groq", "model": "llama-3.3-70b-versatile", "model_ref": "groq:llama-3.3-70b-versatile", "opencode_model": "groq/llama-3.3-70b-versatile", "model_preference": "text_to_speech", "parent_agent": "", "route_type": "cloud", "score": -33, "rationale": "general fallback"}, {"agent_name": "writer", "role": "sub_agent", "provider": "google-ai", "model": "gemini/gemini-2.5-flash", "model_ref": "google-ai:gemini/gemini-2.5-flash", "opencode_model": "google-ai/gemini/gemini-2.5-flash", "model_preference": "chat", "parent_agent": "voice_generator", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "localization", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "voice_generator", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "figma_controller", "role": "agent", "provider": "groq", "model": "meta-llama/llama-4-scout-17b-16e-instruct", "model_ref": "groq:meta-llama/llama-4-scout-17b-16e-instruct", "opencode_model": "groq/meta-llama/llama-4-scout-17b-16e-instruct", "model_preference": "vision", "parent_agent": "", "route_type": "cloud", "score": 5, "rationale": "matches vision"}, {"agent_name": "design", "role": "sub_agent", "provider": "mistral", "model": "mistral-small-latest", "model_ref": "mistral:mistral-small-latest", "opencode_model": "mistral/mistral-small-latest", "model_preference": "chat", "parent_agent": "figma_controller", "route_type": "cloud", "score": 23, "rationale": "matches chat; sub-agent cost efficient"}, {"agent_name": "ux_research", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "figma_controller", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "council_master", "role": "master", "provider": "fireworks", "model": "accounts/fireworks/models/deepseek-v4-pro", "model_ref": "fireworks:accounts/fireworks/models/deepseek-v4-pro", "opencode_model": "fireworks/accounts/fireworks/models/deepseek-v4-pro", "model_preference": "reasoning", "parent_agent": "", "route_type": "cloud", "score": 40, "rationale": "matches reasoning; decision agent needs reasoning; premium decision model"}, {"agent_name": "researcher", "role": "sub_agent", "provider": "azure-openai", "model": "gpt-5.4-mini", "model_ref": "azure-openai:gpt-5.4-mini", "opencode_model": "azure-openai/gpt-5.4-mini", "model_preference": "reasoning", "parent_agent": "council_master", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}, {"agent_name": "security", "role": "sub_agent", "provider": "cloudflare", "model": "@cf/zai-org/glm-4.7-flash", "model_ref": "cloudflare:@cf/zai-org/glm-4.7-flash", "opencode_model": "cloudflare/@cf/zai-org/glm-4.7-flash", "model_preference": "reasoning", "parent_agent": "council_master", "route_type": "cloud", "score": 23, "rationale": "matches reasoning; sub-agent cost efficient"}], "council": {"question": "verify v5 graphify obsidian secure file access", "verdict": "proceed", "yes_votes": 6, "no_votes": 0, "confidence": 80, "summary": "Council vote: 6/6 YES. Verdict: proceed. Confidence: 80%.", "opinions": [{"agent": "researcher", "pillar": "see", "stance": "proceed", "confidence": 72, "reasoning": "researcher recommends proceed after checking see/core concerns with 1 evidence point(s) and 0 risk flag(s).", "evidence": ["research, user signal, or visual evidence requested"], "risks": []}, {"agent": "reviewer", "pillar": "code", "stance": "proceed", "confidence": 72, "reasoning": "reviewer recommends proceed after checking code/coding concerns with 1 evidence point(s) and 0 risk flag(s).", "evidence": ["implementation and test impact reviewed"], "risks": []}, {"agent": "council_master", "pillar": "act", "stance": "proceed", "confidence": 72, "reasoning": "council_master recommends proceed after checking act/core concerns with 1 evidence point(s) and 0 risk flag(s).", "evidence": ["business, operational, and execution impact assessed"], "risks": []}, {"agent": "triage", "pillar": "act", "stance": "proceed", "confidence": 72, "reasoning": "triage recommends proceed after checking act/core concerns with 1 evidence point(s) and 0 risk flag(s).", "evidence": ["business, operational, and execution impact assessed"], "risks": []}, {"agent": "coder", "pillar": "code", "stance": "proceed", "confidence": 72, "reasoning": "coder recommends proceed after checking code/coding concerns with 1 evidence point(s) and 0 risk flag(s).", "evidence": ["implementation and test impact reviewed"], "risks": []}, {"agent": "backend_api", "pillar": "code", "stance": "proceed", "confidence": 72, "reasoning": "backend_api recommends proceed after checking code/coding concerns with 1 evidence point(s) and 0 risk flag(s).", "evidence": ["implementation and test impact reviewed"], "risks": []}]}, "ab_test": {"prompt": "verify v5 graphify obsidian secure file access", "candidates": [{"id": "A", "name": "Lean Single-Path Plan", "strategy": "Use the smallest specialist set, keep token usage low, build the core path first, then run focused master review.", "strengths": ["lower token cost", "faster delivery", "less coordination overhead"], "tradeoffs": ["less parallel exploration", "may miss creative alternatives"], "score": 72}, {"id": "B", "name": "Hybrid Multi-Agent Plan", "strategy": "Use cloud models for master/council reasoning, local or cheap models for sub-agent checks, MCP/browser tools for external state, and integrate after specialist work.", "strengths": ["stronger coverage", "hybrid routing", "better validation breadth"], "tradeoffs": ["slightly higher token use", "more moving parts"], "score": 70}], "winner_id": "A", "loser_id": "B", "council_votes": {"triage": "A", "researcher": "A", "coder": "A", "backend_api": "A", "frontend_ui": "A", "reviewer": "A", "ai_reviewer": "A", "writer": "A"}, "summary": "Council selected version A: Lean Single-Path Plan. Vote A/B: 8/0. Alternative shown: B: Hybrid Multi-Agent Plan."}};
+    const pillars = ['code', 'see', 'design', 'act'];
+    const byPillar = Object.fromEntries(pillars.map(p => [p, []]));
+    payload.agents.forEach(agent => byPillar[agent.pillar].push(agent));
+    agentCount.textContent = `${payload.agents.length} agents`;
+    modelCount.textContent = `${new Set(payload.agents.map(a => a.model_preference)).size} model type(s)`;
+    confidence.textContent = payload.council ? `${payload.council.confidence}% confidence` : 'council ready';
+
+    function renderAgents() {
+      pillars.forEach(pillar => {
+        const box = document.createElement('div');
+        box.className = 'pillar';
+        box.innerHTML = `<h2>${pillar}</h2>`;
+        byPillar[pillar].forEach(agent => {
+          const button = document.createElement('button');
+          button.className = 'agent';
+          button.innerHTML = `<span>${agent.name}</span><small>${agent.model_preference}</small><small>${agent.category}</small>`;
+          button.onclick = () => selectAgent(agent, button);
+          box.appendChild(button);
+        });
+        document.getElementById('pillars').appendChild(box);
+      });
+    }
+
+    function selectAgent(agent, button) {
+      document.querySelectorAll('.agent').forEach(el => el.classList.remove('active'));
+      button.classList.add('active');
+      work.innerHTML = `<div class="event">${agent.name} is working on ${agent.description}</div>`;
+      logic.innerHTML = `<div class="event">pillar: ${agent.pillar}</div><div class="event">model type: ${agent.model_preference}</div><div class="event">route: ${agent.route_type}</div><div class="event">why this AI: ${agent.selection_rationale}</div><div class="event">sub-agents: ${(agent.sub_agent_roles || []).join(', ') || 'none'}</div>`;
+      focusGraphAgent(agent.name);
+      typeCode(agent.code);
+    }
+
+    function typeCode(text) {
+      code.textContent = '';
+      growth.innerHTML = '<div class="event">0 bytes written</div>';
+      let i = 0;
+      const timer = setInterval(() => {
+        i += 2;
+        code.textContent = text.slice(0, i);
+        code.innerHTML = escapeHtml(code.textContent) + '<span class="cursor"></span>';
+        growth.innerHTML = `<div class="event done">${Math.min(i, text.length)} bytes written</div>`;
+        if (i >= text.length) clearInterval(timer);
+      }, 28);
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
+
+    function renderCouncil() {
+      if (!payload.council) {
+        council.innerHTML = '<div class="event">No council decision loaded.</div>';
+        return;
+      }
+      council.innerHTML = `<div class="event vote">${payload.council.summary}</div>`;
+      payload.council.opinions.forEach(opinion => {
+        const row = document.createElement('div');
+        row.className = 'vote-row';
+        const risks = opinion.risks.length ? `<div class="risk">Risks: ${opinion.risks.join('; ')}</div>` : '';
+        row.innerHTML = `<strong>${opinion.agent}</strong> voted ${opinion.stance} (${opinion.confidence}%)<br>${opinion.reasoning}${risks}`;
+        council.appendChild(row);
+      });
+    }
+
+    function renderABTest() {
+      if (!payload.ab_test) {
+        abTest.innerHTML = '<div class="event">No A/B result loaded.</div>';
+        return;
+      }
+      abTest.innerHTML = `<div class="event vote">${payload.ab_test.summary}</div>`;
+      payload.ab_test.candidates.forEach(candidate => {
+        const row = document.createElement('div');
+        row.className = 'vote-row';
+        const label = candidate.id === payload.ab_test.winner_id ? 'COUNCIL PICK' : 'OTHER VERSION';
+        row.innerHTML = `<strong>${label} ${candidate.id}: ${candidate.name}</strong><br>${candidate.strategy}<br>Score: ${candidate.score}`;
+        abTest.appendChild(row);
+      });
+    }
+
+    const graphCanvas = document.getElementById('agentGraph');
+    const graphCtx = graphCanvas.getContext('2d');
+    const graphState = {
+      nodes: [],
+      edges: [],
+      activeAgent: '',
+      running: true,
+      tick: 0,
+    };
+    const colors = {
+      code: '#3ddc97',
+      see: '#67b7ff',
+      design: '#b695ff',
+      act: '#ffd166',
+    };
+
+    function resizeGraph() {
+      const rect = graphCanvas.parentElement.getBoundingClientRect();
+      graphCanvas.width = Math.max(300, Math.floor(rect.width));
+      graphCanvas.height = Math.max(260, Math.floor(rect.height));
+      layoutGraph();
+    }
+
+    function layoutGraph() {
+      const w = graphCanvas.width;
+      const h = graphCanvas.height;
+      if (!w || !h) return;
+      const groups = Object.fromEntries(pillars.map(p => [p, payload.agents.filter(a => a.pillar === p)]));
+      graphState.nodes = [];
+      pillars.forEach((pillar, column) => {
+        const agents = groups[pillar];
+        agents.forEach((agent, row) => {
+          graphState.nodes.push({
+            agent,
+            x: 95 + column * ((w - 190) / Math.max(1, pillars.length - 1)),
+            y: 74 + row * Math.min(44, (h - 120) / Math.max(1, agents.length)),
+            pulse: 0,
+          });
+        });
+      });
+      const byName = Object.fromEntries(graphState.nodes.map(node => [node.agent.name, node]));
+      graphState.edges = [];
+      payload.agents.forEach(agent => {
+        (agent.sub_agent_roles || []).forEach(role => {
+          if (byName[agent.name] && byName[role]) {
+            graphState.edges.push({ from: agent.name, to: role, pulse: Math.random() });
+          }
+        });
+      });
+    }
+
+    function focusGraphAgent(name) {
+      graphState.activeAgent = name;
+      const agent = payload.agents.find(item => item.name === name);
+      if (agent) {
+        const provider = agent.provider && agent.provider !== 'auto' ? agent.provider : 'auto provider';
+        work.innerHTML += `<div class="event done">provider: ${provider} | model: ${agent.model}</div>`;
+      }
+    }
+
+    function drawGraph() {
+      const w = graphCanvas.width;
+      const h = graphCanvas.height;
+      graphCtx.clearRect(0, 0, w, h);
+      graphCtx.fillStyle = '#0b0d10';
+      graphCtx.fillRect(0, 0, w, h);
+      graphCtx.font = '12px Inter, sans-serif';
+      graphCtx.fillStyle = '#aab1c0';
+      graphCtx.fillText('interactive live agent graph: click an agent or run the live demo', 16, h - 16);
+      const byName = Object.fromEntries(graphState.nodes.map(node => [node.agent.name, node]));
+      graphState.edges.forEach(edge => {
+        const a = byName[edge.from];
+        const b = byName[edge.to];
+        if (!a || !b) return;
+        const active = edge.from === graphState.activeAgent || edge.to === graphState.activeAgent;
+        graphCtx.strokeStyle = active ? 'rgba(61, 220, 151, .75)' : 'rgba(170, 177, 192, .18)';
+        graphCtx.lineWidth = active ? 2 : 1;
+        graphCtx.beginPath();
+        graphCtx.moveTo(a.x, a.y);
+        graphCtx.lineTo(b.x, b.y);
+        graphCtx.stroke();
+        if (active || graphState.running) {
+          edge.pulse = (edge.pulse + .01) % 1;
+          const px = a.x + (b.x - a.x) * edge.pulse;
+          const py = a.y + (b.y - a.y) * edge.pulse;
+          graphCtx.fillStyle = '#3ddc97';
+          graphCtx.beginPath();
+          graphCtx.arc(px, py, 3.5, 0, Math.PI * 2);
+          graphCtx.fill();
+        }
+      });
+      graphState.nodes.forEach(node => {
+        const active = node.agent.name === graphState.activeAgent;
+        const radius = active ? 15 + Math.sin(graphState.tick / 10) * 2 : 10;
+        graphCtx.fillStyle = colors[node.agent.pillar] || '#aab1c0';
+        graphCtx.globalAlpha = active ? 1 : .72;
+        graphCtx.beginPath();
+        graphCtx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+        graphCtx.fill();
+        graphCtx.globalAlpha = 1;
+        graphCtx.strokeStyle = active ? '#ffffff' : '#343946';
+        graphCtx.lineWidth = active ? 2 : 1;
+        graphCtx.stroke();
+        graphCtx.fillStyle = active ? '#ffffff' : '#d5dae6';
+        graphCtx.font = active ? '700 11px Inter, sans-serif' : '10px Inter, sans-serif';
+        graphCtx.textAlign = 'center';
+        graphCtx.fillText(node.agent.name, node.x, node.y + 27);
+        graphCtx.fillStyle = '#aab1c0';
+        graphCtx.font = '9px Inter, sans-serif';
+        graphCtx.fillText(node.agent.provider || node.agent.model_preference, node.x, node.y + 39);
+      });
+      graphState.tick += 1;
+      requestAnimationFrame(drawGraph);
+    }
+
+    function advanceLiveDemo() {
+      if (!graphState.running) return;
+      const index = graphState.tick % payload.agents.length;
+      const agent = payload.agents[index];
+      graphState.activeAgent = agent.name;
+      work.innerHTML = `<div class="event">${agent.name} working via ${agent.provider} / ${agent.model_preference}</div>`;
+      logic.innerHTML = `<div class="event">model: ${agent.model}</div><div class="event">route: ${agent.route_type}</div><div class="event">why: ${agent.selection_rationale}</div><div class="event">sub-agents: ${(agent.sub_agent_roles || []).join(', ') || 'none'}</div>`;
+      if (index % 4 === 0) typeCode(agent.code);
+    }
+
+    playGraph.onclick = () => { graphState.running = true; };
+    pauseGraph.onclick = () => { graphState.running = false; };
+    window.addEventListener('resize', resizeGraph);
+
+    renderAgents();
+    renderCouncil();
+    renderABTest();
+    resizeGraph();
+    drawGraph();
+    setInterval(advanceLiveDemo, 900);
+    const first = document.querySelector('.agent');
+    if (first) first.click();
+  </script>
+</body>
+</html>

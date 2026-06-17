@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brewed Motion</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      color: #fff6e8;
+      background: #15110e;
+      overflow: hidden;
+    }
+    main {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(320px, 0.9fr) minmax(320px, 1fr);
+      align-items: center;
+      gap: 48px;
+      padding: 72px 8vw;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(56px, 7vw, 108px);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+    p {
+      max-width: 620px;
+      color: #dcc7a5;
+      font-size: 21px;
+      line-height: 1.55;
+    }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 15px 22px;
+      background: #e8a23e;
+      color: #19110b;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .18s ease, filter .18s ease;
+    }
+    button:hover { transform: scale(1.05); filter: brightness(1.06); }
+    .stage {
+      position: relative;
+      min-height: 620px;
+    }
+    .cup {
+      position: absolute;
+      left: 17%;
+      bottom: 18%;
+      width: 430px;
+      height: 190px;
+      border-radius: 26px;
+      background: #241912;
+      box-shadow: inset 0 0 0 1px #4b3325, 0 40px 90px rgba(0,0,0,.35);
+    }
+    .coin {
+      position: absolute;
+      left: 34%;
+      top: 26%;
+      width: 220px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffe2a7, #e8a23e 45%, #9d6122 100%);
+      box-shadow: 0 28px 70px rgba(232,162,62,.28);
+      animation: spin 3.2s linear infinite;
+    }
+    .coin::before, .coin::after {
+      content: "";
+      position: absolute;
+      width: 40px;
+      height: 92px;
+      top: 58px;
+      border-radius: 50%;
+      background: #3a1c0e;
+      opacity: .7;
+    }
+    .coin::before { left: 72px; transform: rotate(24deg); }
+    .coin::after { right: 72px; transform: rotate(-24deg); }
+    .steam {
+      position: absolute;
+      top: 64px;
+      width: 34px;
+      height: 150px;
+      border-radius: 50%;
+      background: #fff0d0;
+      opacity: .18;
+      filter: blur(10px);
+      animation: steam 2s ease-in-out infinite;
+    }
+    .steam.one { left: 45%; }
+    .steam.two { left: 58%; animation-duration: 2.4s; animation-delay: .35s; }
+    @keyframes spin {
+      from { transform: rotateY(0deg) rotateZ(-8deg); }
+      to { transform: rotateY(360deg) rotateZ(-8deg); }
+    }
+    @keyframes steam {
+      from { transform: translateY(24px) scale(.8); opacity: 0; }
+      35% { opacity: .24; }
+      to { transform: translateY(-70px) scale(1.25); opacity: 0; }
+    }
+    @media (max-width: 860px) {
+      body { overflow: auto; }
+      main { grid-template-columns: 1fr; padding: 48px 24px; }
+      .stage { min-height: 500px; }
+      .cup { width: min(430px, 86vw); left: 4%; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h1>Brewed Motion</h1>
+      <p>A smooth landing page for small-batch coffee, animated around aroma, pour, roast, and a lightweight 3D coin asset.</p>
+      <button>Order Beans</button>
+    </section>
+    <section class="stage" aria-label="Animated coffee product scene">
+      <div class="steam one"></div>
+      <div class="steam two"></div>
+      <div class="coin"></div>
+      <div class="cup"></div>
+    </section>
+  </main>
+</body>
+</html>

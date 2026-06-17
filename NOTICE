@@ -1,0 +1,51 @@
+Agent Swarm - Copyright and License Notices
+===========================================
+
+Copyright (c) 2026 Farhan Dhrubo
+Email: farhaiee123@gmail.com
+GitHub: https://github.com/farhanic017
+Patreon: https://www.patreon.com/farhanic017
+
+All source code, documentation, scripts, generated examples, and associated
+files in this repository are the work of Farhan Dhrubo unless a file states
+otherwise.
+
+License
+-------
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details:
+https://www.gnu.org/licenses/gpl-3.0.html
+
+Required Attribution
+--------------------
+Any use, distribution, or derivative work MUST include clear attribution to the
+original author:
+  "Originally created by Farhan Dhrubo (https://github.com/farhanic017)"
+
+Commercial Use
+--------------
+For commercial licensing inquiries, contact: farhaiee123@gmail.com
+
+Support
+-------
+Support the project on Patreon:
+  https://www.patreon.com/farhanic017
+
+Files in this repository:
+  main.py                    - CLI entry point
+  swarm/                     - Agent orchestration framework
+  swarm/providers/           - Text, image, and video model provider adapters
+  swarm/core/                - Council, dashboard, A/B testing, routing, memory
+  swarm/tools/               - Agent tool registry and browser/terminal tools
+  swarm/switcher/            - Auto model switcher bridge
+  tests/                     - Regression and provider compatibility tests
+  examples/                  - Dashboards, benchmark reports, and demo assets
+  README.md                  - Documentation
+  LICENSE                    - GPL-3.0 license text
+  NOTICE                     - This file

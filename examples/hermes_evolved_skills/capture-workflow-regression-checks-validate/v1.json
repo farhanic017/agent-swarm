@@ -1,0 +1,24 @@
+{
+  "name": "Capture Workflow Regression Checks Validate",
+  "trigger": "turn repeated dashboard QA fixes into a reusable swarm skill",
+  "purpose": "capture the workflow, add regression checks, validate safety gates, and persist a versioned skill",
+  "steps": [
+    "identify when the pattern applies",
+    "execute the proven workflow",
+    "add regression tests for the discovered edge case",
+    "validate the result before handoff"
+  ],
+  "evidence": [
+    "verified with focused tests, full tests, and warning-as-error checks",
+    "capture the workflow, add regression checks, validate safety gates, and persist a versioned skill"
+  ],
+  "version": 1,
+  "confidence": 94,
+  "tags": [
+    "hermes",
+    "self-evolved",
+    "testing"
+  ],
+  "saved_at": 1780757625.6821713,
+  "source": "hermes_self_evolution"
+}
