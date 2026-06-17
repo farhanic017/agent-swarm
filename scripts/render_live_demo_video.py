@@ -85,14 +85,15 @@ AGENTS = [
 ]
 
 FEATURES = [
-    "20+ agents", "4 pillars", "always-on council", "A/B voting", "real-time dashboard",
+    "110+ agents", "4 pillars", "always-on council", "A/B voting", "real-time dashboard",
     "live code typing", "sub-agents", "provider fallback", "local/MCP/cloud", "OpenCode/Qwen/Mistral/Kimi",
     "browser control", "web scraper", "job applier", "app builder", "backend maker", "app tester",
-    "image/video generation", "Google Flow", "Omni", "Veo", "Recraft", "Kling", "NVIDIA", "Zyphra", "Hugging Face", "Alibaba", "Perplexity", "Microsoft",
+    "image/video generation", "Google Flow", "Omni", "Veo", "Recraft", "Kling", "NVIDIA", "Zyphra", "Hugging Face", "Alibaba", "Perplexity", "Microsoft", "Xiaomi MiMo",
     "photo/video editors", "voice STT/TTS", "Figma + Blender", "heavy 3D models", "mockup video",
     "building design", "temporary vision", "benchmark charts", "temporary skills", "MCP marketplace", "Graphify", "Obsidian",
     "scoped file security", "AI reviewer", "XSS checks", "/compact memory", "hallucination recovery", "n8n workflows",
     "game developer", "social poster/manager", "Hermes self-evolution",
+    "shared memory", "domain councils", "financial tools", "prediction agent", "system awareness",
 ]
 
 
@@ -134,7 +135,7 @@ def base_frame(frame: int) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     for y in range(0, HEIGHT, 64):
         draw.line((0, y, WIDTH, y), fill=(15, 23, 38))
     draw.rectangle((0, 0, WIDTH, 72), fill=(10, 16, 28))
-    draw_text(draw, (34, 20), "Agent Swarm v8", fnt=F_H2)
+    draw_text(draw, (34, 20), "Agent Swarm v9", fnt=F_H2)
     draw_text(draw, (1110, 23), "16:9 live demo", fill=MUTED, fnt=F_SMALL)
     return img, draw
 
@@ -448,7 +449,7 @@ def scene_hermes(draw, local: int):
 def scene_finish(draw, local: int):
     draw_text(draw, (96, 128), "Aggressive verification", fnt=F_TITLE)
     cards = [
-        ("pytest", "319 passed", GREEN),
+        ("pytest", "360 passed", GREEN),
         ("warnings", "clean", GREEN),
         ("all CLIs", "shown", BLUE),
         ("feature benchmark", "16/16 passed", PURPLE),
