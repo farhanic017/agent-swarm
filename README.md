@@ -74,7 +74,7 @@ User Input -> [Triage Agent] -> [Researcher] -> [Writer] -> [Reviewer]
 
 | Layer | Components | Purpose |
 |-------|-----------|---------|
-| **Providers** | Azure, OpenRouter, Google, OpenAI, Anthropic, Moonshot/Kimi, Recraft, Kling, NVIDIA, Zyphra, Hugging Face, Alibaba, Perplexity, Microsoft/Azure AI, OpenClaw, Manus, ElevenLabs, OpenAI-compatible gateways | Abstracts LLM, media, voice, and agent-gateway APIs behind unified interface |
+| **Providers** | Azure, OpenRouter, Google, OpenAI, Anthropic, Moonshot/Kimi, Recraft, Kling, NVIDIA, Zyphra, Hugging Face, Alibaba, Perplexity, Microsoft/Azure AI, OpenClaw, Manus, ElevenLabs, Xiaomi/MiMo, OpenAI-compatible gateways | Abstracts LLM, media, voice, and agent-gateway APIs behind unified interface |
 | **Core** | Agent, Orchestrator, State, Handoff | Agent definitions, execution loop, memory |
 | **Tools** | Web search, file ops, code exec | Functions agents can call |
 | **Safety** | Loop detector, timeout manager | Prevents infinite loops and runaway costs |
@@ -217,7 +217,7 @@ Local files such as `.env`, `config.json`, private keys, logs, and swarm state a
 The swarm automatically detects available LLM providers from:
 
 1. **OpenCode config** (`~/.config/opencode/opencode.jsonc`) — best for existing users
-2. **Environment variables** — `AZURE_OPENAI_API_KEY`, `OPENAI_API_KEY`, `OPENAI_TRANSCRIPTION_MODEL`, `OPENAI_TTS_MODEL`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `KIMI_API_KEY`, `MOONSHOT_API_KEY`, `RECRAFT_API_KEY`, `KLING_API_KEY`, `NVIDIA_API_KEY`, `ZYPHRA_API_KEY`, `HF_TOKEN`, `HUGGINGFACE_API_KEY`, `DASHSCOPE_API_KEY`, `ALIBABA_API_KEY`, `PERPLEXITY_API_KEY`, `MICROSOFT_AI_API_KEY`, `MICROSOFT_AI_ENDPOINT`, `OPENCLAW_BASE_URL`, `OPENCLAW_ENDPOINT`, `OPENCLAW_MODEL`, `ELEVENLABS_API_KEY`, `MANUS_API_KEY`, `MANUS_BASE_URL`, `MANUS_MODEL`
+2. **Environment variables** — `AZURE_OPENAI_API_KEY`, `OPENAI_API_KEY`, `OPENAI_TRANSCRIPTION_MODEL`, `OPENAI_TTS_MODEL`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `KIMI_API_KEY`, `MOONSHOT_API_KEY`, `RECRAFT_API_KEY`, `KLING_API_KEY`, `NVIDIA_API_KEY`, `ZYPHRA_API_KEY`, `HF_TOKEN`, `HUGGINGFACE_API_KEY`, `DASHSCOPE_API_KEY`, `ALIBABA_API_KEY`, `PERPLEXITY_API_KEY`, `MICROSOFT_AI_API_KEY`, `MICROSOFT_AI_ENDPOINT`, `OPENCLAW_BASE_URL`, `OPENCLAW_ENDPOINT`, `OPENCLAW_MODEL`, `ELEVENLABS_API_KEY`, `MANUS_API_KEY`, `MANUS_BASE_URL`, `MANUS_MODEL`, `XIAOMI_API_KEY`, `MIMO_API_KEY`
 3. **Fallback** — uses OpenRouter free tier as last resort
 
 The **best model** is used for the triage/routing agent, and **cheaper models** for worker agents.
@@ -502,10 +502,11 @@ agent-swarm/
 
 ### v9 (Current) - Shared Memory, Domain Councils & Financial Tools
 - **Shared Memory System** — All agents now have persistent awareness of what other agents are doing, what happened, and what will happen. 12 new tools: `memory_store_event`, `memory_store_task`, `memory_store_prediction`, `memory_store_knowledge`, `memory_store_lesson`, `memory_query`, `memory_get_agent_state`, `memory_get_all_states`, `memory_get_summary`, `memory_get_recent`, `memory_get_predictions`, `memory_clear`.
-- **System Awareness** — The swarm knows its own hardware: RAM detection, GPU/VRAM detection (NVIDIA/AMD), disk storage status, and auto-detection of 11 API providers from environment variables.
+- **System Awareness** — The swarm knows its own hardware: RAM detection, GPU/VRAM detection (NVIDIA/AMD), disk storage status, and auto-detection of 12 API providers from environment variables.
 - **Prediction Agent** — New specialist that analyzes patterns from shared memory, historical data, and current state to predict outcomes with confidence scores.
 - **Financial Researcher Agent** — 10 equity/market tools ported from OpenAlice: company profiles, financial statements, ratios, earnings calendars, insider trading, short interest, analyst estimates, market discovery, technical indicators (SMA/RSI/MACD/Bollinger), and stock search.
 - **8 Domain-Specific Councils** — Separate review councils for each discipline: `design_council`, `art_council`, `website_council`, `animation_council`, `color_council`, `sound_council`, `finance_council`, `marketing_council`.
+- **Xiaomi MiMo Support** — Added Xiaomi MiMo provider with mimo-v2.5, mimo-v2.5-pro, and mimo-v2.5-flash models. Detect `XIAOMI_API_KEY` or `MIMO_API_KEY` environment variables.
 - **Financial Code Removed from OpenAlice** — All financial tool files, equity clients, and model definitions removed from OpenAlice repo since capabilities are now native to Agent Swarm.
 - **360 passing tests** — Full regression suite green across all new and existing features.
 

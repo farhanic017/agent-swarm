@@ -27,6 +27,8 @@ OPENAI_COMPATIBLE_ENDPOINTS = {
     "mistral": "https://api.mistral.ai/v1",
     "deepseek": "https://api.deepseek.com/v1",
     "xai": "https://api.x.ai/v1",
+    "xiaomi": "https://api.xiaomi.com/v1",
+    "mimo": "https://api.xiaomi.com/v1",
     "ollama": "http://localhost:11434/v1",
     "lmstudio": "http://localhost:1234/v1",
     "vllm": "http://localhost:8000/v1",

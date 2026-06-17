@@ -417,6 +417,18 @@ class SwarmConfig:
                 endpoint="https://api.groq.com/openai/v1",
             )
 
+        xiaomi_key = os.environ.get("XIAOMI_API_KEY") or os.environ.get("MIMO_API_KEY")
+        if xiaomi_key:
+            providers["xiaomi"] = ProviderConfig(
+                api_key=xiaomi_key,
+                endpoint=os.environ.get("XIAOMI_BASE_URL", "https://api.xiaomi.com/v1"),
+                models={
+                    "mimo-v2.5": {"modalities": ["chat", "reasoning"]},
+                    "mimo-v2.5-pro": {"modalities": ["chat", "reasoning"]},
+                    "mimo-v2.5-flash": {"modalities": ["chat"]},
+                },
+            )
+
         local_providers = _detect_local_models()
         providers.update(local_providers)
 
