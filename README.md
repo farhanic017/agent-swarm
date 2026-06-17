@@ -3,7 +3,7 @@
 [![license: GPLv3](https://img.shields.io/badge/license-GPLv3-8a2be2)](./LICENSE)
 ![platform: Python 3.8+](https://img.shields.io/badge/platform-Python%203.8%2B-22c55e)
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
-![version: v9](https://img.shields.io/badge/version-v9-2563eb)
+![version: v9.5](https://img.shields.io/badge/version-v9.5-2563eb)
 ![tests: 360 passed](https://img.shields.io/badge/tests-360%20passed-16a34a)
 ![providers: 20+ supported](https://img.shields.io/badge/providers-20%2B-8b5cf6)
 
@@ -501,7 +501,7 @@ agent-swarm/
 
 ## Version History
 
-### v9 (Current) - Shared Memory, Domain Councils & Financial Tools
+### v9.5 (Current) - Parallel Providers, Shared Memory & Full Swarm Intelligence
 - **Shared Memory System** — All agents now have persistent awareness of what other agents are doing, what happened, and what will happen. 12 new tools: `memory_store_event`, `memory_store_task`, `memory_store_prediction`, `memory_store_knowledge`, `memory_store_lesson`, `memory_query`, `memory_get_agent_state`, `memory_get_all_states`, `memory_get_summary`, `memory_get_recent`, `memory_get_predictions`, `memory_clear`.
 - **System Awareness** — The swarm knows its own hardware: RAM detection, GPU/VRAM detection (NVIDIA/AMD), disk storage status, and auto-detection of 12 API providers from environment variables.
 - **Prediction Agent** — New specialist that analyzes patterns from shared memory, historical data, and current state to predict outcomes with confidence scores.

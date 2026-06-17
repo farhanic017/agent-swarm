@@ -135,7 +135,7 @@ def base_frame(frame: int) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     for y in range(0, HEIGHT, 64):
         draw.line((0, y, WIDTH, y), fill=(15, 23, 38))
     draw.rectangle((0, 0, WIDTH, 72), fill=(10, 16, 28))
-    draw_text(draw, (34, 20), "Agent Swarm v9", fnt=F_H2)
+    draw_text(draw, (34, 20), "Agent Swarm v9.5", fnt=F_H2)
     draw_text(draw, (1110, 23), "16:9 live demo", fill=MUTED, fnt=F_SMALL)
     return img, draw
 
