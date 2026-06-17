@@ -52,6 +52,7 @@ from swarm.core.workflow_plans import (
 from swarm.tools.finance import FINANCE_TOOL_DEFINITIONS
 from swarm.core.shared_memory import SHARED_MEMORY_TOOL_DEFINITIONS
 from swarm.core.system_awareness import SYSTEM_AWARENESS_TOOL_DEFINITIONS
+from swarm.providers.parallel import PARALLEL_PROVIDER_TOOL_DEFINITIONS
 
 
 class ToolRegistry:
@@ -199,6 +200,7 @@ class ToolRegistry:
         registry._register_finance_tools()
         registry._register_shared_memory_tools()
         registry._register_system_awareness_tools()
+        registry._register_parallel_provider_tools()
 
         return registry
 
@@ -1340,6 +1342,15 @@ class ToolRegistry:
 
     def _register_system_awareness_tools(self):
         for defn in SYSTEM_AWARENESS_TOOL_DEFINITIONS:
+            self.register(Tool(
+                name=defn["name"],
+                description=defn["description"],
+                func=defn["func"],
+                parameters=defn["parameters"],
+            ))
+
+    def _register_parallel_provider_tools(self):
+        for defn in PARALLEL_PROVIDER_TOOL_DEFINITIONS:
             self.register(Tool(
                 name=defn["name"],
                 description=defn["description"],

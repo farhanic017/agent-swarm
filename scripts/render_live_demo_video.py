@@ -93,7 +93,7 @@ FEATURES = [
     "building design", "temporary vision", "benchmark charts", "temporary skills", "MCP marketplace", "Graphify", "Obsidian",
     "scoped file security", "AI reviewer", "XSS checks", "/compact memory", "hallucination recovery", "n8n workflows",
     "game developer", "social poster/manager", "Hermes self-evolution",
-    "shared memory", "domain councils", "financial tools", "prediction agent", "system awareness",
+    "shared memory", "domain councils", "financial tools", "prediction agent", "system awareness", "parallel providers",
 ]
 
 

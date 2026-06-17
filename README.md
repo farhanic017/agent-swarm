@@ -5,6 +5,7 @@
 [![author: Farhan Dhrubo](https://img.shields.io/badge/author-Farhan%20Dhrubo-f97316)](https://github.com/farhanic017)
 ![version: v9](https://img.shields.io/badge/version-v9-2563eb)
 ![tests: 360 passed](https://img.shields.io/badge/tests-360%20passed-16a34a)
+![providers: 20+ supported](https://img.shields.io/badge/providers-20%2B-8b5cf6)
 
 > Created by [Farhan Dhrubo](https://github.com/farhanic017) - [Patreon](https://www.patreon.com/farhanic017) - [Submit an issue](https://github.com/farhanic017/agent-swarm/issues)
 
@@ -507,6 +508,7 @@ agent-swarm/
 - **Financial Researcher Agent** — 10 equity/market tools ported from OpenAlice: company profiles, financial statements, ratios, earnings calendars, insider trading, short interest, analyst estimates, market discovery, technical indicators (SMA/RSI/MACD/Bollinger), and stock search.
 - **8 Domain-Specific Councils** — Separate review councils for each discipline: `design_council`, `art_council`, `website_council`, `animation_council`, `color_council`, `sound_council`, `finance_council`, `marketing_council`.
 - **Xiaomi MiMo Support** — Added Xiaomi MiMo provider with mimo-v2.5, mimo-v2.5-pro, and mimo-v2.5-flash models. Detect `XIAOMI_API_KEY` or `MIMO_API_KEY` environment variables.
+- **Parallel Multi-Provider Execution** — New parallel execution system: `parallel_chat` (failover), `parallel_chat_race` (fastest wins), `get_provider_health`, `list_available_providers`. Providers work simultaneously, not just one at a time. Load balancing, health monitoring, and automatic failover.
 - **Financial Code Removed from OpenAlice** — All financial tool files, equity clients, and model definitions removed from OpenAlice repo since capabilities are now native to Agent Swarm.
 - **360 passing tests** — Full regression suite green across all new and existing features.
 
