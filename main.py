@@ -77,7 +77,7 @@ def build_default_swarm() -> Orchestrator:
     config = SwarmConfig.from_opencode_config()
 
     # System awareness: read resource limits from OctoCode
-    max_agents = int(os.environ.get("OCTOCODE_MAX_AGENTS", "15"))
+    max_agents = int(os.environ.get("OCTOCODE_MAX_AGENTS", "40"))
     system_level = os.environ.get("OCTOCODE_SYSTEM_LEVEL", "safe")
     ram_gb = int(os.environ.get("OCTOCODE_RAM_GB", "8"))
     cpu_cores = int(os.environ.get("OCTOCODE_CPU_CORES", "4"))
@@ -97,27 +97,8 @@ def build_default_swarm() -> Orchestrator:
 
     all_agents = create_specialist_agents(mesh=True)
 
-    # Limit agents based on system resources
-    # Core agents are always included, others are added based on capacity
-    CORE_AGENTS = {"triage", "orchestrator", "council_master", "watchdog"}
-    PRIORITY_AGENTS = {"coder", "researcher", "writer", "reviewer", "debugging", "security"}
-
-    selected = [a for a in all_agents if a.name in CORE_AGENTS]
-    remaining = [a for a in all_agents if a.name not in CORE_AGENTS]
-
-    # Add priority agents first
-    for agent in remaining:
-        if len(selected) >= max_agents:
-            break
-        if agent.name in PRIORITY_AGENTS:
-            selected.append(agent)
-
-    # Fill remaining capacity
-    for agent in remaining:
-        if len(selected) >= max_agents:
-            break
-        if agent.name not in CORE_AGENTS and agent.name not in PRIORITY_AGENTS:
-            selected.append(agent)
+    # Use all agents up to system limit - swarm needs full agent mesh for council/voting
+    selected = all_agents[:max_agents]
 
     print(f"[system] Selected {len(selected)}/{len(all_agents)} agents")
 
