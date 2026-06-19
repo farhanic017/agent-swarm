@@ -513,10 +513,14 @@ class Orchestrator:
         """
         self.init_sub_agents()
 
+        # System-aware concurrency limit
+        max_concurrent = int(os.environ.get("OCTOCODE_MAX_AGENTS", "15"))
+        concurrency = min(len(tasks), max_concurrent)
+
         if verbose:
             await self.consciousness.push_progress(
-                "orchestrator", f"Starting {len(tasks)} parallel agents",
-                {"tasks": [t[0] for t in tasks]}
+                "orchestrator", f"Starting {len(tasks)} parallel agents (concurrency: {concurrency})",
+                {"tasks": [t[0] for t in tasks], "concurrency": concurrency}
             )
 
         async def run_one(agent_name: str, task: str) -> tuple[str, str, bool]:
@@ -581,10 +585,17 @@ class Orchestrator:
         results = []
         pending = set(task_map.keys())
         while pending:
-            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED, timeout=120)
+            if not done and pending:
+                # Timeout: cancel remaining tasks
+                for fut in pending:
+                    fut.cancel()
+                break
             for fut in done:
                 agent_name = task_map[fut]
-                if fut.exception():
+                if fut.cancelled():
+                    results.append((agent_name, "Timed out", False))
+                elif fut.exception():
                     results.append((agent_name, f"Unexpected error: {fut.exception()}", False))
                 else:
                     result = fut.result()

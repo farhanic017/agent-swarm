@@ -20,7 +20,21 @@ import asyncio
 import json
 import os
 import sys
+import threading
 from pathlib import Path
+
+_streaming_enabled = False
+
+def emit_event(event_type: str, data: dict):
+    """Emit a JSON event to stdout for real-time streaming to OpenCode."""
+    if not _streaming_enabled:
+        return
+    event = {"type": event_type, **data}
+    try:
+        sys.stdout.write(json.dumps(event) + "\n")
+        sys.stdout.flush()
+    except Exception:
+        pass
 
 from swarm.config import SwarmConfig
 from swarm.core.agent import Agent
@@ -62,6 +76,12 @@ def load_custom_agents(path: str) -> list[Agent]:
 def build_default_swarm() -> Orchestrator:
     config = SwarmConfig.from_opencode_config()
 
+    # System awareness: read resource limits from OctoCode
+    max_agents = int(os.environ.get("OCTOCODE_MAX_AGENTS", "15"))
+    system_level = os.environ.get("OCTOCODE_SYSTEM_LEVEL", "safe")
+    ram_gb = int(os.environ.get("OCTOCODE_RAM_GB", "8"))
+    cpu_cores = int(os.environ.get("OCTOCODE_CPU_CORES", "4"))
+
     print(f"[config] Detected providers: {list(config.providers.keys())}")
     if config.providers:
         best = config.get_best_model()
@@ -71,9 +91,37 @@ def build_default_swarm() -> Orchestrator:
     else:
         print("[config] No API providers detected. Set AZURE_OPENAI_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY.")
 
+    print(f"[system] Resource level: {system_level} | RAM: {ram_gb}GB | CPU: {cpu_cores} cores | Max agents: {max_agents}")
+
     orchestrator = Orchestrator(config=config)
 
-    orchestrator.register_agents(*create_specialist_agents(mesh=True))
+    all_agents = create_specialist_agents(mesh=True)
+
+    # Limit agents based on system resources
+    # Core agents are always included, others are added based on capacity
+    CORE_AGENTS = {"triage", "orchestrator", "council_master", "watchdog"}
+    PRIORITY_AGENTS = {"coder", "researcher", "writer", "reviewer", "debugging", "security"}
+
+    selected = [a for a in all_agents if a.name in CORE_AGENTS]
+    remaining = [a for a in all_agents if a.name not in CORE_AGENTS]
+
+    # Add priority agents first
+    for agent in remaining:
+        if len(selected) >= max_agents:
+            break
+        if agent.name in PRIORITY_AGENTS:
+            selected.append(agent)
+
+    # Fill remaining capacity
+    for agent in remaining:
+        if len(selected) >= max_agents:
+            break
+        if agent.name not in CORE_AGENTS and agent.name not in PRIORITY_AGENTS:
+            selected.append(agent)
+
+    print(f"[system] Selected {len(selected)}/{len(all_agents)} agents")
+
+    orchestrator.register_agents(*selected)
 
     return orchestrator
 
@@ -107,21 +155,43 @@ def print_council_decision(decision):
 
 
 async def run_headless(orchestrator: Orchestrator, prompt: str):
-    print(f"\n{'='*60}")
-    print(f" SWARM RUN")
-    print(f"{'='*60}")
-    print(f" Input: {prompt}")
-    print(f"{'='*60}\n")
+    global _streaming_enabled
+    _streaming_enabled = True
 
+    emit_event("swarm_start", {"prompt": prompt})
+    emit_event("status", {"message": "Initializing agents..."})
+
+    # Hook into consciousness to stream events
+    original_publish = orchestrator.consciousness.publish
+    async def streaming_publish(event):
+        await original_publish(event)
+        if event.type == "progress":
+            detail = event.payload.get("detail", {})
+            emit_event("agent_progress", {
+                "agent": event.source,
+                "message": event.payload.get("message", ""),
+                "detail": detail,
+            })
+        elif event.type == "state_change":
+            emit_event("state_change", {
+                "key": event.payload.get("key", ""),
+                "source": event.source,
+            })
+    orchestrator.consciousness.publish = streaming_publish
+
+    emit_event("status", {"message": "Running orchestrator..."})
     state = await orchestrator.run(prompt, verbose=True)
+
+    emit_event("swarm_complete", {
+        "turns": state.iteration,
+        "tokens": state.metadata.get("total_tokens", 0),
+        "duration_ms": state.metadata.get("total_duration_ms", 0),
+        "agents_used": list(set(t.agent_name for t in state.agent_turns)) if state.agent_turns else [],
+    })
 
     # Section 1: The rest (artifacts, stats, metadata)
     if state.artifacts:
-        print(f"\n{'='*60}")
-        print(f" ARTIFACTS")
-        print(f"{'='*60}")
-        for key in state.artifacts:
-            print(f"  - {key}")
+        emit_event("artifacts", {"keys": list(state.artifacts.keys())})
 
     ab_test = state.get_artifact("ab_test")
     if ab_test:
@@ -149,34 +219,22 @@ async def run_headless(orchestrator: Orchestrator, prompt: str):
     # Section 2: Council votes (if any)
     council_decision = state.get_artifact("council_decision")
     if council_decision:
-        print(f"\n{'='*60}")
-        print(f" COUNCIL VOTES")
-        print(f"{'='*60}")
-        print(f"Question: {council_decision.get('question', prompt)}")
-        print(f"Vote: {council_decision.get('yes_votes', 0)}/{council_decision.get('yes_votes', 0) + council_decision.get('no_votes', 0)} YES")
-        print(f"Verdict: {council_decision.get('verdict', 'N/A')}")
-        print(f"Confidence: {council_decision.get('confidence', 0)}%")
-        if council_decision.get('conflicts'):
-            print(f"Conflicts: {', '.join(council_decision['conflicts'])}")
-        print("\nReasoning:")
-        for opinion in council_decision.get('opinions', []):
-            print(f"  - {opinion['agent_name']}: {opinion['stance']} ({opinion['confidence']}%)")
-            print(f"    {opinion['reasoning']}")
-            if opinion.get('evidence'):
-                print(f"    Evidence: {'; '.join(opinion['evidence'])}")
-            if opinion.get('risks'):
-                print(f"    Risks: {'; '.join(opinion['risks'])}")
+        emit_event("council_decision", {
+            "question": council_decision.get("question", prompt),
+            "verdict": council_decision.get("verdict", "N/A"),
+            "confidence": council_decision.get("confidence", 0),
+            "yes_votes": council_decision.get("yes_votes", 0),
+            "no_votes": council_decision.get("no_votes", 0),
+            "opinions": council_decision.get("opinions", []),
+        })
 
     # Section 3: Agent reply (at the very bottom)
     if state.agent_turns:
         final = state.agent_turns[-1]
-        print(f"\n{'='*60}")
-        print(f" AGENT REPLY")
-        print(f"{'='*60}")
-        print(f"\nFinal agent: {final.agent_name}")
-        print(f"\n{final.output[:2000]}")
-        if len(final.output) > 2000:
-            print("... (truncated)")
+        emit_event("agent_reply", {
+            "agent": final.agent_name,
+            "output": final.output[:2000],
+        })
 
 
 async def run_interactive(orchestrator: Orchestrator):
@@ -543,9 +601,9 @@ def main():
         # Test watchdog rotation
         from swarm.switcher.watchdog import Watchdog, is_token_exhaustion
         w = Watchdog(bridge=bridge, interval=60)
-        new_model = await w.report_token_exhaustion(
+        new_model = asyncio.run(w.report_token_exhaustion(
             test_model, "402 Payment Required: 0 credits remaining"
-        )
+        ))
         if new_model:
             print(f"  [PASS] Watchdog rotation: {test_model} -> {new_model}")
         else:
