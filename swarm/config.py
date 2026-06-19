@@ -440,8 +440,14 @@ class SwarmConfig:
         if path is None:
             home = Path.home()
             candidates = [
+                home / ".config" / "octo" / "octo.jsonc",
+                home / ".config" / "octo" / "octo.json",
+                home / ".config" / "octocode" / "octocode.jsonc",
+                home / ".config" / "octocode" / "octocode.json",
                 home / ".config" / "opencode" / "opencode.jsonc",
                 home / ".config" / "opencode" / "opencode.json",
+                Path.cwd() / "octo.jsonc",
+                Path.cwd() / "octo.json",
                 Path.cwd() / "opencode.jsonc",
                 Path.cwd() / "opencode.json",
             ]
@@ -553,6 +559,21 @@ class SwarmConfig:
         for name, lpc in local_providers.items():
             if name not in providers:
                 providers[name] = lpc
+
+        # Read provider config from OctoCode env var (passed from Bun side)
+        env_config = os.environ.get("OCTOCODE_PROVIDER_CONFIG")
+        if env_config:
+            try:
+                env_providers = json.loads(env_config)
+                for name, pc in env_providers.items():
+                    if name not in providers or not providers[name].has_api_key():
+                        providers[name] = ProviderConfig(
+                            api_key=pc.get("api_key", ""),
+                            endpoint=pc.get("endpoint", ""),
+                            models=pc.get("models", {}),
+                        )
+            except (json.JSONDecodeError, KeyError):
+                pass
 
         cfg.providers = providers
         return cfg
